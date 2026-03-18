@@ -1,0 +1,8 @@
+state_dimension: 1
+num_time_steps: 50
+dt: 1.0
+
+initial:
+true_state: [0.0]
+est_state: [0.0]
+initial_cov: 1.0
