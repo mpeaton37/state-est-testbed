@@ -1,12 +1,15 @@
-Software Design Document (SDD)  
-Simulation-Based Testbed for State Estimation Algorithms  
-Version 1.0  
-Date: March 18, 2026  
-Prepared for: mpeaton (@mpeaton)  
+# Software Design Document (SDD)
 
-1. Introduction
+## Simulation-Based Testbed for State Estimation Algorithms
 
-1.1 Purpose
+**Version 1.0**  
+**Date:** March 18, 2026  
+**Prepared for:** mpeaton (@mpeaton)
+
+## 1. Introduction
+
+### 1.1 Purpose
+
 This Software Design Document (SDD) describes the architecture, components, interfaces, data structures, and implementation guidelines for a modular, extensible C++ testbed designed to simulate and evaluate state estimation algorithms — beginning with the linear Kalman Filter (KF) in scalar (1-D), 2-D, and 3-D configurations, with clear extensibility toward higher dimensions and future nonlinear variants (EKF, UKF, particle filters, etc.).
 
 The testbed supports:
@@ -17,7 +20,7 @@ The testbed supports:
 
 This document serves as the hand-off artifact for implementation.
 
-1.2 Scope
+### 1.2 Scope
 
 In scope (Phase 1 – MVP):
 - Linear time-invariant Gaussian state-space models
@@ -37,7 +40,7 @@ Out of scope (Phase 1):
 - GUI (beyond matplotlib scripts)
 - Cloud/container deployment
 
-1.3 References
+### 1.3 References
 - Eigen 3.4+ documentation
 - YAML-CPP 0.8+
 - nlohmann/json 3.11+
@@ -46,210 +49,16 @@ Out of scope (Phase 1):
 - IEEE Std 1012-2016 (software verification & validation – informative)
 - “Optimal State Estimation” by Dan Simon (2006) – Kalman filter theory reference
 
-1.4 Definitions & Acronyms
+### 1.4 Definitions & Acronyms
 - KF      Kalman Filter
 - MC      Monte-Carlo
 - NEES    Normalized Estimation Error Squared
 - RMSE    Root Mean Square Error
 - SDD     Software Design Document
 
-2. System Overview
+## 2. System Overview
 
 The testbed executes discrete-time linear-Gaussian simulations and runs one or more estimator instances in closed loop with the simulated truth model.
 
 High-level data flow (ASCII representation):
-
-    YAML Config ──► Config Parser ──► Experiment Runner
-                                     │
-                                     ▼
-                           Monte-Carlo Loop
-                                     │
-                       ┌─────────────┼─────────────┐
-                       ▼             ▼             ▼
-                Truth Trajectory   Estimator     Logger / DB
-                       │             │             │
-                       └─────────────┼─────────────┘
-                                     ▼
-                               Post-Processor
-                                     │
-                                     ▼
-                             CSV + Plots (Python)
-
-3. Design Considerations
-
-3.1 Goals & Principles
-- Dimensionality agnostic — Use Eigen::VectorXd / MatrixXd everywhere
-- Modularity — Estimator as abstract interface for easy swapping (KF → EKF → UKF)
-- Reproducibility — Fixed seeds per MC run; config hashing in DB
-- Lightweight — Minimal external dependencies; header-only where possible
-- Developer productivity — YAML for config, spdlog for output, simple CSV + matplotlib for analysis
-
-3.2 Assumptions & Constraints
-- C++17
-- Single-threaded execution (parallel MC runs possible in future via std::thread / TBB)
-- Floating-point precision: double
-- No hard real-time requirements
-
-4. System Architecture
-
-4.1 Logical View (Components)
-
-Component              | Responsibility                                                                | Key Classes / Files
------------------------|-------------------------------------------------------------------------------|-------------------------
-Configuration          | Parse YAML, validate, convert to Eigen types                                  | Config.hpp, ConfigParser.cpp
-Dynamics / Simulation  | Generate true state trajectory + noisy measurements                           | LinearGaussianModel.hpp/cpp
-Estimator              | Abstract predict/update interface + concrete KF implementation                | Estimator.hpp, KalmanFilter.hpp/cpp
-Experiment             | Orchestrate one full MC run (truth + estimator + logging)                     | Experiment.hpp/cpp
-Batch Runner           | Manage multiple MC runs, aggregate stats                                      | BatchRunner.hpp/cpp, main.cpp
-Storage                | SQLite schema + insert logic; CSV export helper                               | Database.hpp/cpp
-Logging                | Console + file logging (progress, summary stats)                              | spdlog integration
-Post-processing        | Python scripts reading DB/CSV → plots                                         | scripts/plot_results.py
-
-4.2 Key Interfaces (Abstract Base Classes)
-
-Estimator interface (shown as plain text):
-
-    class Estimator {
-    public:
-        virtual ~Estimator() = default;
-        virtual void predict(const Eigen::VectorXd& u = {}) = 0;
-        virtual void update(const Eigen::VectorXd& z) = 0;
-        virtual Eigen::VectorXd state() const = 0;
-        virtual Eigen::MatrixXd covariance() const = 0;
-        virtual std::string name() const = 0;
-        virtual void reset(const Eigen::VectorXd& x0, const Eigen::MatrixXd& P0) = 0;
-    };
-
-DynamicsModel interface (shown as plain text):
-
-    class DynamicsModel {
-    public:
-        virtual ~DynamicsModel() = default;
-        virtual Eigen::VectorXd propagate(const Eigen::VectorXd& x, const Eigen::VectorXd& u = {}) const = 0;
-        virtual Eigen::VectorXd measure(const Eigen::VectorXd& x) const = 0;
-        virtual Eigen::MatrixXd processNoiseCov() const = 0;
-        virtual Eigen::MatrixXd measurementNoiseCov() const = 0;
-    };
-
-5. Detailed Component Design
-
-5.1 Configuration (YAML example - plain text)
-
-    state_dimension: 2                # position + velocity
-    num_time_steps: 300
-    dt: 0.05                          # s
-
-    initial:
-      true_state: [0.0, 5.0]          # x0, vx0
-      est_state:  [0.0, 0.0]
-      initial_cov: 100.0              # scalar → diag(P0) = initial_cov * I
-
-    dynamics:
-      state_transition: [[1.0, 0.05], [0.0, 1.0]]   # discrete F
-      process_noise_diag: [0.0025, 0.0001]          # Q diagonal
-
-    measurement:
-      observation_matrix: [1.0, 0.0]                # H
-      measurement_noise: 0.25                       # R (scalar)
-
-    monte_carlo:
-      runs: 200
-      base_seed: 42
-
-    output:
-      database: "results.db"
-      csv_per_run: true
-
-5.2 Database Schema (SQLite - plain text)
-
-    CREATE TABLE experiments (
-        exp_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        config_hash TEXT NOT NULL,
-        dimension INTEGER,
-        start_time TEXT,
-        description TEXT
-    );
-
-    CREATE TABLE runs (
-        run_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        exp_id INTEGER,
-        rng_seed INTEGER,
-        FOREIGN KEY(exp_id) REFERENCES experiments(exp_id)
-    );
-
-    CREATE TABLE time_steps (
-        run_id INTEGER,
-        step INTEGER,
-        time REAL,
-        true_state TEXT,       -- JSON array
-        est_state TEXT,
-        error_norm REAL,
-        cov_trace REAL,
-        innovation_norm REAL,
-        PRIMARY KEY(run_id, step),
-        FOREIGN KEY(run_id) REFERENCES runs(run_id)
-    );
-
-    CREATE TABLE summary_stats (
-        run_id INTEGER PRIMARY KEY,
-        rmse REAL,
-        mean_nees REAL,
-        FOREIGN KEY(run_id) REFERENCES runs(run_id)
-    );
-
-5.3 Visualization (Python helper)
-- plot_trajectory.py — true vs est + ±3σ bounds per dimension
-- plot_rmse_nees.py — batch statistics across MC runs
-- Uses pandas, matplotlib, seaborn
-
-6. Project Structure
-
-state-est-testbed/
-├── CMakeLists.txt
-├── environment.yml             # conda env definition
-├── README.md
-├── configs/                    # .yaml files
-├── src/
-│   ├── main.cpp
-│   ├── core/
-│   │   ├── Config.hpp/cpp
-│   │   ├── LinearGaussianModel.hpp/cpp
-│   │   ├── Estimator.hpp
-│   │   ├── KalmanFilter.hpp/cpp
-│   │   ├── Experiment.hpp/cpp
-│   │   ├── Database.hpp/cpp
-│   │   └── utils/              # eigen_json.hpp, random.hpp, etc.
-├── tests/                      # GoogleTest suites
-├── scripts/                    # plot_*.py
-└── docs/
-    └── SDD.md                  # this document
-
-7. Build & Environment
-
-- Conda environment — see environment.yml (compilers, cmake, eigen, yaml-cpp, sqlite, spdlog, nlohmann-json, python + pandas/matplotlib/seaborn)
-- CMake — find_package(Eigen3 REQUIRED), etc.
-- Build command (from activated conda env):
-
-    mkdir build && cd build
-    cmake .. -DCMAKE_BUILD_TYPE=Release
-    cmake --build . --parallel
-
-8. Testing Strategy
-
-- Unit tests — matrix ops, predict/update correctness, YAML round-trip
-- Integration tests — full scalar KF run with known analytic behavior
-- Verification tests — compare RMSE/NEES against theoretical bounds for simple cases
-
-9. Next Steps for Implementation
-
-1. Create conda env from environment.yml
-2. Implement Config parser + Eigen helpers
-3. Implement LinearGaussianModel and basic KalmanFilter
-4. Build minimal end-to-end scalar run (no DB yet)
-5. Add SQLite logging
-6. Add batch runner & summary stats
-7. Write Python visualization scripts
-8. Add unit tests incrementally
-
-This SDD provides a complete blueprint for the initial development phase.
 
