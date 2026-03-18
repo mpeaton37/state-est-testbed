@@ -1,22 +1,14 @@
 name: state-est
 channels:
-
-* conda-forge
-  dependencies:
-* cmake
-* eigen
-* yaml-cpp
-* compilers
-* make
-* python
-* matplotlib
-* pandas
-  EOF
-
-# ---------------- README ----------------
-
-cat > $ROOT/README.md << 'EOF'
-
-# State Estimation Testbed
-
-See docs/SDD.md for full design.
+  - conda-forge
+dependencies:
+  - cmake
+  - eigen
+  - yaml-cpp
+  - compilers
+  - make
+  - python
+  - matplotlib
+  - pandas
+  - gtest
+  - sqlite
