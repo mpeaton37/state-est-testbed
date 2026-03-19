@@ -95,9 +95,9 @@ void Database::insertTimeStep(int run_id, int step, const Eigen::VectorXd& true_
     sqlite3_prepare_v2(reinterpret_cast<sqlite3*>(db_), sql.c_str(), -1, &stmt, nullptr);
     sqlite3_bind_int(stmt, 1, run_id);
     sqlite3_bind_int(stmt, 2, step);
-    sqlite3_bind_text(stmt, 3, serializeVector(true_state).c_str(), -1, SQLITE_STATIC);
-    sqlite3_bind_text(stmt, 4, serializeVector(est_state).c_str(), -1, SQLITE_STATIC);
-    sqlite3_bind_text(stmt, 5, serializeMatrix(est_cov).c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 3, serializeVector(true_state).c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 4, serializeVector(est_state).c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 5, serializeMatrix(est_cov).c_str(), -1, SQLITE_TRANSIENT);
     sqlite3_step(stmt);
     sqlite3_finalize(stmt);
 }
