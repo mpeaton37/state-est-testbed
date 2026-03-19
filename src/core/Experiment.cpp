@@ -9,7 +9,6 @@ Experiment::Experiment(const Config& config)
 void Experiment::run() {
 LinearGaussianModel model(config_.F, config_.H);
 
-```
 KalmanFilter kf(config_.F, config_.Q, config_.H, config_.R);
 kf.init(config_.x0_est, config_.P0);
 
@@ -27,6 +26,5 @@ for (int k = 0; k < config_.num_steps; ++k) {
               << " | Est: " << kf.state().transpose()
               << std::endl;
 }
-```
 
 }

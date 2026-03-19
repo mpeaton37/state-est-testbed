@@ -8,14 +8,12 @@ const Eigen::MatrixXd& Q,
 const Eigen::MatrixXd& H,
 const Eigen::MatrixXd& R);
 
-```
 void init(const Eigen::VectorXd& x0, const Eigen::MatrixXd& P0);
 
 void predict() override;
 void update(const Eigen::VectorXd& z) override;
 
 Eigen::VectorXd state() const override;
-```
 
 private:
 Eigen::MatrixXd F_, Q_, H_, R_;

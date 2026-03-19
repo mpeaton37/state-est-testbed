@@ -1,4 +1,4 @@
-name: state-est
+name: state-est 
 channels:
   - conda-forge
 dependencies:

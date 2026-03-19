@@ -4,7 +4,6 @@
 Config Config::fromFile(const std::string& path) {
 YAML::Node node = YAML::LoadFile(path);
 
-```
 Config c;
 c.state_dim = node["state_dimension"].as<int>();
 c.num_steps = node["num_time_steps"].as<int>();
@@ -20,6 +19,5 @@ c.H = Eigen::MatrixXd::Identity(1, c.state_dim);
 c.R = Eigen::MatrixXd::Identity(1, 1) * 0.1;
 
 return c;
-```
 
 }
