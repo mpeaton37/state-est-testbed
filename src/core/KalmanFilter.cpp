@@ -24,3 +24,5 @@ P_ = (Eigen::MatrixXd::Identity(x_.size(), x_.size()) - K * H_) * P_;
 }
 
 Eigen::VectorXd KalmanFilter::state() const { return x_; }
+
+Eigen::MatrixXd KalmanFilter::covariance() const { return P_; }
