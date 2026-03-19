@@ -51,3 +51,6 @@ GTest::gtest_main
 
 enable_testing()
 add_test(NAME KalmanFilterTest COMMAND test_kalman_filter)
+
+# Integration test
+add_test(NAME IntegrationTest COMMAND state_est_testbed ${CMAKE_SOURCE_DIR}/configs/test.yaml)
