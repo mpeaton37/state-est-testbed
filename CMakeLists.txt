@@ -15,6 +15,9 @@ FetchContent_MakeAvailable(yaml-cpp)
 
 find_package(Eigen3 REQUIRED)
 
+# Add gtest
+find_package(GTest REQUIRED)
+
 add_executable(state_est_testbed
 src/main.cpp
 src/core/Config.cpp
@@ -31,3 +34,20 @@ Eigen3::Eigen
 yaml-cpp
 sqlite3
 )
+
+# Test executable
+add_executable(test_kalman_filter
+tests/test_kalman_filter.cpp
+src/core/KalmanFilter.cpp
+src/core/Estimator.hpp
+)
+
+target_include_directories(test_kalman_filter PRIVATE src)
+
+target_link_libraries(test_kalman_filter
+Eigen3::Eigen
+GTest::gtest_main
+)
+
+enable_testing()
+add_test(NAME KalmanFilterTest COMMAND test_kalman_filter)
