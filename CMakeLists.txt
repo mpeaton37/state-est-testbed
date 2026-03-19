@@ -21,6 +21,7 @@ src/core/Config.cpp
 src/core/KalmanFilter.cpp
 src/core/LinearGaussianModel.cpp
 src/core/Experiment.cpp
+src/core/Database.cpp
 )
 
 target_include_directories(state_est_testbed PRIVATE src)
@@ -28,4 +29,5 @@ target_include_directories(state_est_testbed PRIVATE src)
 target_link_libraries(state_est_testbed
 Eigen3::Eigen
 yaml-cpp
+sqlite3
 )
