@@ -3,6 +3,18 @@ num_time_steps: 50
 dt: 1.0
 
 initial:
-true_state: [0.0]
-est_state: [0.0]
-initial_cov: 1.0
+  true_state: [0.0]
+  est_state: [0.0]
+  initial_cov: 1.0
+
+dynamics:
+  state_transition: [[1.0]]
+  process_noise_diag: [0.01]
+
+measurement:
+  observation_matrix: [[1.0]]
+  measurement_noise: 0.1
+
+monte_carlo:
+  runs: 1
+  base_seed: 42
