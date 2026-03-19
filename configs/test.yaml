@@ -1,0 +1,20 @@
+state_dimension: 2
+num_time_steps: 20
+dt: 0.1
+
+initial:
+  true_state: [0.0, 1.0]
+  est_state: [0.0, 0.0]
+  initial_cov: 10.0
+
+dynamics:
+  state_transition: [[1.0, 0.1], [0.0, 1.0]]
+  process_noise_diag: [0.01, 0.005]
+
+measurement:
+  observation_matrix: [[1.0, 0.0]]
+  measurement_noise: 0.1
+
+monte_carlo:
+  runs: 2
+  base_seed: 42
