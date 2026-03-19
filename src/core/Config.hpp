@@ -5,6 +5,8 @@
 struct Config {
 int state_dim;
 int num_steps;
+int base_seed;
+int num_runs;
 double dt;
 
 Eigen::VectorXd x0_true;
