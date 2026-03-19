@@ -102,15 +102,35 @@ cmake --build . --parallel
 
 ## 🧪 Testing
 
+### Running Tests
+
+After building the project, run the full test suite with:
+
 ```bash
 ctest
 ```
 
-Includes:
+For more control:
 
-* Unit tests (math, parsing, KF steps)
-* Integration tests (end-to-end runs)
-* Statistical verification (RMSE / NEES bounds)
+```bash
+ctest --verbose                    # Show detailed test output
+ctest -R KalmanFilterTest          # Run only KalmanFilter unit tests
+ctest -R IntegrationTest           # Run the end-to-end integration test
+ctest -N                           # List all available tests
+```
+
+To run the unit test executable directly:
+
+```bash
+./build/test_kalman_filter
+```
+
+**Current test coverage includes:**
+* KalmanFilter predict/update logic
+* Basic state and covariance checks
+* Integration test that runs the full pipeline with `configs/test.yaml`
+
+To improve coverage further, additional tests for `Config`, `Database`, and `Experiment` are recommended.
 
 ---
 
@@ -148,8 +168,11 @@ New estimators can be added by implementing:
 ```cpp
 class Estimator {
 public:
+    virtual ~Estimator() = default;
     virtual void predict(const Eigen::VectorXd& u = {}) = 0;
     virtual void update(const Eigen::VectorXd& z) = 0;
+    virtual Eigen::VectorXd state() const = 0;
+    virtual Eigen::MatrixXd covariance() const = 0;
 };
 ```
 
