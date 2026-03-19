@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "KalmanFilter.hpp"
+#include "core/KalmanFilter.hpp"
 #include <Eigen/Dense>
 
 // Test Kalman Filter predict and update steps
