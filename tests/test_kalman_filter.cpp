@@ -13,8 +13,10 @@ TEST(KalmanFilterTest, PredictUpdate) {
     H << 1.0;
     Eigen::MatrixXd R(1, 1);
     R << 0.1;
+    Eigen::MatrixXd B(1, 1);
+    B << 0.0;  // Zero control matrix for this test
 
-    KalmanFilter kf(F, Q, H, R);
+    KalmanFilter kf(F, Q, H, R, B);
 
     Eigen::VectorXd x0(1);
     x0 << 0.0;
@@ -27,7 +29,7 @@ TEST(KalmanFilterTest, PredictUpdate) {
     EXPECT_NEAR(kf.covariance()(0, 0), 1.0, 1e-6);
 
     // Predict step
-    kf.predict();
+    kf.predict({});
     EXPECT_NEAR(kf.state()(0), 0.0, 1e-6);
     EXPECT_NEAR(kf.covariance()(0, 0), 1.01, 1e-6);  // P + Q
 
@@ -51,8 +53,10 @@ TEST(KalmanFilterTest, MultiStepPrediction) {
     H << 1.0, 0.0;
     Eigen::MatrixXd R(1, 1);
     R << 0.1;
+    Eigen::MatrixXd B(2, 1);
+    B << 0.0, 0.0;  // Zero control matrix for this test
 
-    KalmanFilter kf(F, Q, H, R);
+    KalmanFilter kf(F, Q, H, R, B);
 
     Eigen::VectorXd x0(2);
     x0 << 0.0, 1.0;
@@ -60,7 +64,7 @@ TEST(KalmanFilterTest, MultiStepPrediction) {
     P0 << 1.0, 0.0, 0.0, 1.0;
     kf.init(x0, P0);
 
-    kf.predict();
+    kf.predict({});
     EXPECT_NEAR(kf.state()(0), 0.1, 1e-5);
     EXPECT_NEAR(kf.state()(1), 1.0, 1e-5);
 
@@ -81,8 +85,10 @@ TEST(KalmanFilterTest, ZeroMeasurementNoise) {
     H << 1.0;
     Eigen::MatrixXd R(1, 1);
     R << 0.0;
+    Eigen::MatrixXd B(1, 1);
+    B << 0.0;  // Zero control matrix for this test
 
-    KalmanFilter kf(F, Q, H, R);
+    KalmanFilter kf(F, Q, H, R, B);
 
     Eigen::VectorXd x0(1);
     x0 << 5.0;

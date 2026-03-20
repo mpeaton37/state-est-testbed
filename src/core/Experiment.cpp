@@ -10,9 +10,9 @@ Experiment::Experiment(const Config& config, Database* db, int run_id)
     : config_(config), db_(db), run_id_(run_id) {}
 
 void Experiment::run() {
-    LinearGaussianModel model(config_.F, config_.H);
+    LinearGaussianModel model(config_.F, config_.H, config_.B);
 
-    KalmanFilter kf(config_.F, config_.Q, config_.H, config_.R);
+    KalmanFilter kf(config_.F, config_.Q, config_.H, config_.R, config_.B);
     kf.init(config_.x0_est, config_.P0);
 
     Eigen::VectorXd x_true = config_.x0_true;
@@ -26,13 +26,17 @@ void Experiment::run() {
     std::vector<Eigen::VectorXd> true_states;
     std::vector<Eigen::VectorXd> est_states;
 
+    // Assume a simple constant control input for demonstration; can be made configurable
+    int control_dim = config_.B.cols();
+    Eigen::VectorXd u = Eigen::VectorXd::Ones(control_dim) * 0.1;  // Example: small constant input
+
     for (int k = 0; k < config_.num_steps; ++k) {
         // Propagate true state with process noise
         Eigen::VectorXd w(config_.state_dim);
         for (int i = 0; i < config_.state_dim; ++i) {
             w(i) = process_noise(gen) * std::sqrt(config_.Q(i, i));
         }
-        x_true = model.propagate(x_true) + w;
+        x_true = model.propagate(x_true, u) + w;
 
         // Generate measurement with measurement noise
         Eigen::VectorXd v(config_.H.rows());
@@ -41,7 +45,7 @@ void Experiment::run() {
         }
         Eigen::VectorXd z = model.measure(x_true) + v;
 
-        kf.predict();
+        kf.predict(u);
         kf.update(z);
 
         // Store for RMSE

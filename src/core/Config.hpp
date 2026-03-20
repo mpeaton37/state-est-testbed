@@ -13,7 +13,7 @@ Eigen::VectorXd x0_true;
 Eigen::VectorXd x0_est;
 Eigen::MatrixXd P0;
 
-Eigen::MatrixXd F, Q, H, R;
+Eigen::MatrixXd F, Q, H, R, B;
 
 static Config fromFile(const std::string& path);
 

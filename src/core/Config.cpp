@@ -39,6 +39,20 @@ Config Config::fromFile(const std::string& path) {
         c.Q(i, i) = process_noise_diag[i].as<double>();
     }
 
+    // Load control matrix (optional, default to zero)
+    if (dynamics["control_matrix"]) {
+        auto control_matrix = dynamics["control_matrix"];
+        int control_dim = control_matrix[0].size();  // Assume rows == state_dim, cols == control_dim
+        c.B = Eigen::MatrixXd(c.state_dim, control_dim);
+        for (int i = 0; i < c.state_dim; ++i) {
+            for (int j = 0; j < control_dim; ++j) {
+                c.B(i, j) = control_matrix[i][j].as<double>();
+            }
+        }
+    } else {
+        c.B = Eigen::MatrixXd::Zero(c.state_dim, 1);  // Default to zero matrix with minimal control dim
+    }
+
     // Load measurement
     auto measurement = node["measurement"];
     int meas_dim = measurement["observation_matrix"].size();

@@ -2,18 +2,19 @@
 #include "KalmanFilter.hpp"
 
 KalmanFilter::KalmanFilter(const Eigen::MatrixXd& F,
-                           const Eigen::MatrixXd& Q,
-                           const Eigen::MatrixXd& H,
-                           const Eigen::MatrixXd& R)
-    : F_(F), Q_(Q), H_(H), R_(R) {}
+const Eigen::MatrixXd& Q,
+const Eigen::MatrixXd& H,
+const Eigen::MatrixXd& R,
+const Eigen::MatrixXd& B)
+: F_(F), Q_(Q), H_(H), R_(R), B_(B) {}
 
 void KalmanFilter::init(const Eigen::VectorXd& x0, const Eigen::MatrixXd& P0) {
     x_ = x0;
     P_ = P0;
 }
 
-void KalmanFilter::predict() {
-    x_ = F_ * x_;
+void KalmanFilter::predict(const Eigen::VectorXd& u = {}) {
+    x_ = F_ * x_ + B_ * u;
     P_ = F_ * P_ * F_.transpose() + Q_;
 }
 
