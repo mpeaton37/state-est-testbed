@@ -1,0 +1,27 @@
+#!/bin/sh
+# Pre-commit hook to run tests on C++ changes.
+
+set -e
+
+# Check if any staged C++/header files changed.
+if ! git diff --cached --quiet --name-only | grep -qE '\.(cpp|c|hpp|h)$'; then
+    exit 0
+fi
+
+echo "Running tests before commit..."
+
+# Ensure build dir exists.
+mkdir -p build
+
+cd build
+
+# Configure if needed.
+if [ ! -f CMakeCache.txt ]; then
+    cmake ..
+fi
+
+# Build and test (parallel where possible).
+cmake --build . --parallel $(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)
+ctest --output-on-failure -V
+
+echo "Tests passed!"
