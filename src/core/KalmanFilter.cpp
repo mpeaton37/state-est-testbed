@@ -13,7 +13,7 @@ void KalmanFilter::init(const Eigen::VectorXd& x0, const Eigen::MatrixXd& P0) {
     P_ = P0;
 }
 
-void KalmanFilter::predict(const Eigen::VectorXd& u = {}) {
+void KalmanFilter::predict(const Eigen::VectorXd& u) {
     x_ = F_ * x_ + B_ * u;
     P_ = F_ * P_ * F_.transpose() + Q_;
 }
