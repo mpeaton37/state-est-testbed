@@ -14,7 +14,12 @@ void KalmanFilter::init(const Eigen::VectorXd& x0, const Eigen::MatrixXd& P0) {
 }
 
 void KalmanFilter::predict(const Eigen::VectorXd& u) {
-    x_ = F_ * x_ + B_ * u;
+    if (u.size() > 0) {
+        // Optional: assert(u.size() == B_.cols() && "Control input dimension mismatch");
+        x_ = F_ * x_ + B_ * u;
+    } else {
+        x_ = F_ * x_;
+    }
     P_ = F_ * P_ * F_.transpose() + Q_;
 }
 
