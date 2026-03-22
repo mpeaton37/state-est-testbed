@@ -1,8 +1,8 @@
 # python_bindings/CMakeLists.txt
 
 pybind11_add_module(kalman
-    ../python_bindings/python_bindings.cpp               # adjust path if file is elsewhere
-    # or just python_bindings.cpp if you move the .cpp file into this folder
+    python_bindings.cpp
+    ${PROJECT_SOURCE_DIR}/src/core/KalmanFilter.cpp
 )
 
 target_include_directories(kalman
@@ -22,6 +22,6 @@ target_link_libraries(kalman
 set_target_properties(kalman PROPERTIES
     OUTPUT_NAME "kalman"                      # → import kalman
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/python"
+    POSITION_INDEPENDENT_CODE ON
     # Optional: PDB symbol files, etc. for Windows debugging
 )
-
