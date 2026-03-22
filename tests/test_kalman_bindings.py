@@ -46,16 +46,16 @@ def main():
     P0 = np.eye(2)
     kf.init(x0, P0)
     print("✓ init() called with x0, P0")
-    print(f"  Initial state: {kf.state()}")
-    assert np.allclose(kf.state(), x0)
-    print("  ✓ state() matches x0")
+    print(f"  Initial state: {kf.state}")
+    assert np.allclose(kf.state, x0)
+    print("  ✓ state matches x0")
 
     # Test 4: update() + predict()
     z = np.array([0.05])  # Noisy position measurement
     kf.update(z)
     kf.predict()
-    final_state = kf.state()
-    final_cov = kf.covariance()
+    final_state = kf.state
+    final_cov = kf.covariance
     print(f"  After update({z[0]}) + predict():")
     print(f"    state: {final_state}")
     print(f"    cov[0,0]: {final_cov[0,0]:.6f}")
