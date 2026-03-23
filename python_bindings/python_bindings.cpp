@@ -19,8 +19,9 @@ PYBIND11_MODULE(kalman, m) {
 
     py::class_<KalmanFilter, Estimator>(m, "KalmanFilter")
         .def(py::init<const Eigen::MatrixXd&, const Eigen::MatrixXd&,
-                      const Eigen::MatrixXd&, const Eigen::MatrixXd&>(),
-             "F"_a, "Q"_a, "H"_a, "R"_a)
+                      const Eigen::MatrixXd&, const Eigen::MatrixXd&,
+                      const Eigen::MatrixXd&>(),
+             "F"_a, "Q"_a, "H"_a, "R"_a, "B"_a)
 
         .def("init", &KalmanFilter::init, "x0"_a, "P0"_a)
 
