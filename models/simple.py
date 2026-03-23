@@ -53,7 +53,7 @@ for i in range(1, n):
     pos[i] = pos[i-1] + vel[i-1] * dt + 0.5 * a * dt**2
 
 # ───────────────────────────────────────────────
-# Simulate  measurements (same as before)
+# Simulate measurements (same as before)
 np.random.seed(42)
 sigma_range = 15.0
 sigma_angle = 0.00025  # ~0.014°
@@ -96,4 +96,5 @@ print("Full dataset (401 timesteps) saved to: maneuver_kalman_test_data.csv")
 # Quick summary
 print(f"Altitude range: {df['true_z_m'].min()/1000:.2f} – {df['true_z_m'].max()/1000:.2f} km")
 print(f"Max lateral displacement (y): {df['true_y_m'].abs().max():.1f} m")
+import kalman
 print(f"Peak lateral velocity (vy): {df['true_vy_mps'].abs().max():.1f} m/s")
