@@ -25,7 +25,9 @@ PYBIND11_MODULE(kalman, m) {
 
         .def("init", &KalmanFilter::init, "x0"_a, "P0"_a)
 
-        .def("predict", &KalmanFilter::predict)
+        .def("predict", [](KalmanFilter& self) { self.predict(Eigen::VectorXd()); })
+        .def("predict", &KalmanFilter::predict, "u"_a)
+
         .def("update", &KalmanFilter::update, "z"_a)
 
         .def_property_readonly("state", &KalmanFilter::state)
