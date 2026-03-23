@@ -38,8 +38,9 @@ def main():
     Q = 0.01 * np.eye(2)  # Process noise
     H = np.array([[1.0, 0.0]])  # Position observation
     R = np.array([[0.1]])  # Measurement noise
-    kf = kalman.KalmanFilter(F, Q, H, R)
-    print("✓ KalmanFilter instantiated with matrices F,Q,H,R")
+    B = np.zeros((2, 1))  # Control input matrix (no control used)
+    kf = kalman.KalmanFilter(F, Q, H, R, B)
+    print("✓ KalmanFilter instantiated with matrices F,Q,H,R,B")
 
     # Test 3: init()
     x0 = np.array([0.0, 1.0])
