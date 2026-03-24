@@ -26,6 +26,13 @@ rm /tmp/miniconda.sh
 echo "Creating conda environment 'stateest'..."
 /opt/miniconda/bin/conda create -n stateest python=3.12 -y
 
+echo "Accepting Anaconda Terms of Service (non-interactive)..."
+/opt/miniconda/bin/conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main || true
+/opt/miniconda/bin/conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r   || true
+
+# Also accept the defaults channel (good practice)
+ /opt/miniconda/bin/conda tos accept --override-channels --channel defaults || true
+
 # Install packages
 echo "Installing scientific packages..."
 /opt/miniconda/bin/conda run -n stateest conda install -y \
