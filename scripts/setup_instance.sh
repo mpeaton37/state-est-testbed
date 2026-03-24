@@ -22,6 +22,12 @@ wget -q $MINICONDA_URL -O /tmp/miniconda.sh
 bash /tmp/miniconda.sh -b -p /opt/miniconda
 rm /tmp/miniconda.sh
 
+
+
+# === ROBUST ToS ACCEPTANCE ===
+echo "Accepting Anaconda Terms of Service automatically..."
+export CONDA_PLUGINS_AUTO_ACCEPT_TOS=yes
+
 # Create environment using full path (no init)
 echo "Creating conda environment 'stateest'..."
 /opt/miniconda/bin/conda create -n stateest python=3.12 -y
