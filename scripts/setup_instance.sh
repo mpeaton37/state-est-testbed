@@ -58,16 +58,18 @@ else
 fi
 
 # ------------------------------------------------------------------
-# 6. Install base Python packages
+# 6. Install base Python packages + Eigen3 (critical for CMake)
 # ------------------------------------------------------------------
-echo "Installing base scientific packages..."
+echo "Installing base scientific packages + Eigen3..."
 /opt/miniconda/bin/conda run -n stateest CONDA_PLUGINS_AUTO_ACCEPT_TOS=yes \
-    conda install -y numpy pandas matplotlib plotly pyyaml tqdm ipykernel
+    conda install -y \
+    numpy pandas matplotlib plotly pyyaml tqdm ipykernel \
+    eigen cmake pybind11
 
-/opt/miniconda/bin/conda run -n stateest pip install --upgrade pybind11 cmake jupyterlab
+/opt/miniconda/bin/conda run -n stateest pip install --upgrade jupyterlab
 
 # ------------------------------------------------------------------
-# 7. Clone / Update Repository FIRST (critical fix)
+# 7. Clone / Update Repository
 # ------------------------------------------------------------------
 echo "Cloning / updating repository..."
 cd /home/ubuntu
@@ -83,7 +85,7 @@ else
 fi
 
 # ------------------------------------------------------------------
-# 8. Build + Install stateest package (editable)
+# 8. Build + Install stateest package
 # ------------------------------------------------------------------
 echo "Building and installing stateest package..."
 cd /home/ubuntu/state-est-testbed
@@ -91,19 +93,20 @@ cd /home/ubuntu/state-est-testbed
 # Clean old build artifacts
 rm -rf build/ *.egg-info/ dist/ 2>/dev/null || true
 
-# Build C++ extension
+# Build C++ extension with Eigen from conda
 echo "Building pybind11 extension..."
 /opt/miniconda/bin/conda run -n stateest cmake -B build -S . \
-    -DPython3_EXECUTABLE=/opt/miniconda/envs/stateest/bin/python
+    -DPython3_EXECUTABLE=/opt/miniconda/envs/stateest/bin/python \
+    -DCMAKE_PREFIX_PATH=/opt/miniconda/envs/stateest \
+    -DCMAKE_BUILD_TYPE=Release
 
-/opt/miniconda/bin/conda run -n stateest cmake --build build --config Release
+/opt/miniconda/bin/conda run -n stateest cmake --build build --config Release -j2
 
 # Install in editable mode
 echo "Installing stateest in editable mode..."
 /opt/miniconda/bin/conda run -n stateest pip install -e .
 
 echo "✅ stateest package installed successfully."
-
 # ------------------------------------------------------------------
 # 9. Register Jupyter kernel
 # ------------------------------------------------------------------
