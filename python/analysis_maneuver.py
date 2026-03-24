@@ -27,6 +27,9 @@ z_rr    = df["meas_rr_mps"].values
 x_true = df[["true_x_m", "true_y_m", "true_z_m"]].values      # (n,3)
 v_true = df[["true_vx_mps", "true_vy_mps", "true_vz_mps"]].values
 
+# Full 6-D truth state for NEES (position + velocity)
+x_true_full = np.hstack([x_true, v_true])                     # (n,6)
+
 n_steps = len(t)
 
 # ─── Choose coordinate system for filter ───────────────────────────────
@@ -35,8 +38,7 @@ n_steps = len(t)
 dim_x = 6
 
 # Very simple near-constant-velocity model (you'll tune Q later)
-#dt = t[1] - t[0]  # assume constant
-dt = np.mean(np.diff(t)) #time roughly constant
+dt = np.mean(np.diff(t))  # average dt (assume roughly constant)
 F = np.eye(6)
 F[0:3, 3:6] = dt * np.eye(3)
 
@@ -55,8 +57,9 @@ Q[3:6, 3:6] = Qpos * np.eye(3)
 # (obviously wrong — replace with proper H / nonlinear measurement function)
 H = np.eye(6)           # ← placeholder !!!
 R = np.diag([15**2, 15**2, 15**2, 1.5**2, 0.1**2, 0.1**2])   # rough
-B = np.zeros((6,1))  # no control input
-kf = stateest.KalmanFilter(F, Q, H, R, B) 
+B = np.zeros((6, 1))    # no control input
+
+kf = stateest.KalmanFilter(F, Q, H, R, B)     # assuming your bindings accept np arrays
 
 # Initial guess (can be noisy / uncertain)
 x0 = np.array([800000., 0., 80000., -5500., 0., -30.])
@@ -83,10 +86,8 @@ for i in range(n_steps):
     covs[i] = kf.covariance
 
     # NEES (only if P invertible)
-    err = estimates[i][0:3] - x_true[i]   
+    err = estimates[i] - x_true_full[i]
     try:
-        import pdb
-        pdb.set_trace()
         nees[i] = err @ np.linalg.solve(covs[i], err)
     except np.linalg.LinAlgError:
         nees[i] = np.nan
