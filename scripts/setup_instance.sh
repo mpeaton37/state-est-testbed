@@ -64,7 +64,7 @@ echo "Installing base scientific packages + Eigen3..."
 /opt/miniconda/bin/conda run -n stateest CONDA_PLUGINS_AUTO_ACCEPT_TOS=yes \
     conda install -y \
     numpy pandas matplotlib plotly pyyaml tqdm ipykernel \
-    eigen cmake pybind11 gtest libsqlite
+    eigen cmake pybind11 gtest
 
 /opt/miniconda/bin/conda run -n stateest pip install --upgrade jupyterlab
 
@@ -161,7 +161,7 @@ jupyter lab --ip=0.0.0.0 --no-browser --allow-root \
 --ServerApp.allow_remote_access=True \
 --ServerApp.open_browser=False \
 --ServerApp.allow_origin='*' \
-"\$@"
+"$@"
 EOF
 chmod +x /usr/local/bin/jl
 

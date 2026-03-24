@@ -5,16 +5,13 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "stateest"
 version = "0.1.0.dev0"
-description = "State estimation testbed for Kalman filters and predictors"
-readme = "README.md"
+description = "State estimation testbed"
 requires-python = ">=3.10"
-dependencies = []
 
 [tool.setuptools]
 packages = ["stateest"]
+package-dir = {"" = "python"}
+include-package-data = true
 
-[tool.setuptools.package-dir]
-"stateest" = "python/stateest"
-
-[tool.setuptools.dynamic]
-version = {attr = "stateest.__version__"}
+[tool.setuptools.package-data]
+"stateest" = ["*.so"]
