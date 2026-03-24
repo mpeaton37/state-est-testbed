@@ -13,7 +13,7 @@ echo "=== Starting idempotent setup for state-est-testbed demo (Ubuntu) ==="
 # ------------------------------------------------------------------
 echo "Updating system packages..."
 apt-get update -qq && apt-get upgrade -y -qq
-apt-get install -y -qq curl wget git build-essential unzip
+apt-get install -y -qq curl wget git build-essential unzip libsqlite3-dev
 
 # ------------------------------------------------------------------
 # 2. AWS CLI v2
@@ -64,7 +64,7 @@ echo "Installing base scientific packages + Eigen3..."
 /opt/miniconda/bin/conda run -n stateest CONDA_PLUGINS_AUTO_ACCEPT_TOS=yes \
     conda install -y \
     numpy pandas matplotlib plotly pyyaml tqdm ipykernel \
-    eigen cmake pybind11
+    eigen cmake pybind11 gtest libsqlite
 
 /opt/miniconda/bin/conda run -n stateest pip install --upgrade jupyterlab
 
