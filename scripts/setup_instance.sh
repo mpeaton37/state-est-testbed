@@ -196,7 +196,6 @@ EOF
 
 chown -R ubuntu:ubuntu /home/ubuntu
 
-echo "=== Idempotent Setup Completed Successfully! ==="
 echo "You can safely re-run this script anytime."
 echo "Run 'jl' to start JupyterLab."
 
