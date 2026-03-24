@@ -96,5 +96,4 @@ print("Full dataset (401 timesteps) saved to: maneuver_kalman_test_data.csv")
 # Quick summary
 print(f"Altitude range: {df['true_z_m'].min()/1000:.2f} – {df['true_z_m'].max()/1000:.2f} km")
 print(f"Max lateral displacement (y): {df['true_y_m'].abs().max():.1f} m")
-import kalman
 print(f"Peak lateral velocity (vy): {df['true_vy_mps'].abs().max():.1f} m/s")
