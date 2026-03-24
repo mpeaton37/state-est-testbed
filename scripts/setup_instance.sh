@@ -27,26 +27,26 @@ wget -q $MINICONDA_URL -O /tmp/miniconda.sh
 bash /tmp/miniconda.sh -b -p /opt/miniconda
 rm /tmp/miniconda.sh
 
-# Initialize conda for root and add to PATH
+echo "Initializing conda..."
 /opt/miniconda/bin/conda init bash
-source /root/.bashrc
 
-# Create a dedicated environment for the testbed
-echo "Creating conda environment 'stateest'..."
-/opt/miniconda/bin/conda create -n stateest python=3.12 -y
+# Source so the current shell knows about conda
+source /ubuntu/.bashrc
 
-# Activate and install core packages
-echo "Installing scientific packages..."
-/opt/miniconda/bin/conda run -n stateest conda install -y \
-    numpy pandas matplotlib plotly pyyaml tqdm ipykernel
+echo "Creating and activating stateest environment..."
+conda create -n stateest python=3.12 -y
+conda activate stateest
 
-/opt/miniconda/bin/conda run -n stateest pip install pybind11 cmake jupyterlab
+echo "Installing packages..."
+conda install -y numpy pandas matplotlib plotly pyyaml tqdm ipykernel
+pip install pybind11 cmake jupyterlab
 
-# Make the environment kernel available to Jupyter
-/opt/miniconda/bin/conda run -n stateest python -m ipykernel install --user --name stateest --display-name "Python (stateest)"
+# Register the kernel
+python -m ipykernel install --user --name stateest --display-name "Python (stateest)"
+
 
 # Create convenient aliases and environment activation
-cat << EOF >> /root/.bashrc
+cat << EOF >> /ubuntu/.bashrc
 
 # Convenience for state-est-testbed
 alias jl='conda run -n stateest jupyter lab --ip=0.0.0.0 --no-browser --allow-root'
@@ -55,7 +55,7 @@ conda activate stateest 2>/dev/null || true
 EOF
 
 # Create a welcome message
-cat << EOF > /root/WELCOME.txt
+cat << EOF > /ubuntu/WELCOME.txt
 ================================================================
           state-est-testbed AWS Demo Environment Ready!
 ================================================================
@@ -78,4 +78,4 @@ Remember to STOP the instance when not in use!
 EOF
 
 echo "=== Setup completed successfully! ==="
-echo "Read /root/WELCOME.txt for next steps."
+echo "Read /ubuntu/WELCOME.txt for next steps."
