@@ -1,8 +1,7 @@
 #!/bin/bash
 # =============================================================================
-# setup-miniconda-jupyter.sh
+# setup_instance.sh
 # Fully idempotent setup for state-est-testbed demo on AWS EC2 (Ubuntu)
-# Safe to run multiple times (AWS CLI, Miniconda, repo, password, notebook)
 # =============================================================================
 
 set -e
@@ -17,7 +16,7 @@ apt-get update -qq && apt-get upgrade -y -qq
 apt-get install -y -qq curl wget git build-essential unzip
 
 # ------------------------------------------------------------------
-# 2. AWS CLI v2 (idempotent)
+# 2. AWS CLI v2
 # ------------------------------------------------------------------
 if ! command -v aws >/dev/null 2>&1 || ! aws --version | grep -q "aws-cli/2"; then
     echo "Installing AWS CLI v2..."
@@ -30,12 +29,11 @@ else
 fi
 
 # ------------------------------------------------------------------
-# 3. Miniconda (idempotent)
+# 3. Miniconda
 # ------------------------------------------------------------------
 if [ ! -d "/opt/miniconda" ]; then
     echo "Installing Miniconda..."
-    MINICONDA_URL="https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh"
-    wget -q $MINICONDA_URL -O /tmp/miniconda.sh
+    wget -q https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O /tmp/miniconda.sh
     bash /tmp/miniconda.sh -b -p /opt/miniconda
     rm /tmp/miniconda.sh
 else
@@ -43,15 +41,14 @@ else
 fi
 
 # ------------------------------------------------------------------
-# 4. Robust ToS Acceptance
+# 4. ToS Acceptance
 # ------------------------------------------------------------------
 echo "Ensuring Anaconda Terms of Service are accepted..."
 export CONDA_PLUGINS_AUTO_ACCEPT_TOS=yes
 /opt/miniconda/bin/conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main || true
-/opt/miniconda/bin/conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r   || true
 
 # ------------------------------------------------------------------
-# 5. Create conda environment (idempotent)
+# 5. Create conda environment
 # ------------------------------------------------------------------
 if ! /opt/miniconda/bin/conda env list | grep -q "stateest"; then
     echo "Creating conda environment 'stateest'..."
@@ -61,22 +58,66 @@ else
 fi
 
 # ------------------------------------------------------------------
-# 6. Install Python packages (idempotent)
+# 6. Install base Python packages
 # ------------------------------------------------------------------
-echo "Installing/updating scientific packages..."
+echo "Installing base scientific packages..."
 /opt/miniconda/bin/conda run -n stateest CONDA_PLUGINS_AUTO_ACCEPT_TOS=yes \
     conda install -y numpy pandas matplotlib plotly pyyaml tqdm ipykernel
 
-/opt/miniconda/bin/conda run -n stateest CONDA_PLUGINS_AUTO_ACCEPT_TOS=yes \
-    pip install --upgrade pybind11 cmake jupyterlab
+/opt/miniconda/bin/conda run -n stateest pip install --upgrade pybind11 cmake jupyterlab
 
 # ------------------------------------------------------------------
-# 7. Jupyter Password from AWS Secrets Manager
+# 7. Clone / Update Repository FIRST (critical fix)
+# ------------------------------------------------------------------
+echo "Cloning / updating repository..."
+cd /home/ubuntu
+
+if [ -d "state-est-testbed" ]; then
+    echo "Repository exists → pulling latest changes..."
+    cd state-est-testbed
+    git pull --rebase --autostash || echo "Warning: git pull failed (continuing...)"
+else
+    echo "Cloning fresh repository..."
+    git clone https://github.com/mpeaton37/state-est-testbed.git
+    cd state-est-testbed
+fi
+
+# ------------------------------------------------------------------
+# 8. Build + Install stateest package (editable)
+# ------------------------------------------------------------------
+echo "Building and installing stateest package..."
+cd /home/ubuntu/state-est-testbed
+
+# Clean old build artifacts
+rm -rf build/ *.egg-info/ dist/ 2>/dev/null || true
+
+# Build C++ extension
+echo "Building pybind11 extension..."
+/opt/miniconda/bin/conda run -n stateest cmake -B build -S . \
+    -DPython3_EXECUTABLE=/opt/miniconda/envs/stateest/bin/python
+
+/opt/miniconda/bin/conda run -n stateest cmake --build build --config Release
+
+# Install in editable mode
+echo "Installing stateest in editable mode..."
+/opt/miniconda/bin/conda run -n stateest pip install -e .
+
+echo "✅ stateest package installed successfully."
+
+# ------------------------------------------------------------------
+# 9. Register Jupyter kernel
+# ------------------------------------------------------------------
+echo "Registering Jupyter kernel 'stateest'..."
+/opt/miniconda/bin/conda run -n stateest \
+    python -m ipykernel install --user --name stateest --display-name "Python (stateest)"
+
+# ------------------------------------------------------------------
+# 10. Set JupyterLab password from AWS Secrets Manager
 # ------------------------------------------------------------------
 echo "Retrieving Jupyter password from AWS Secrets Manager..."
 
-SECRET_ID="state-est-testbed/jupyter-password"   # ← CHANGE IF NEEDED
-REGION="us-east-1"                               # ← CHANGE TO YOUR REGION
+SECRET_ID="state-est-testbed/jupyter-password"
+REGION="us-east-1"
 
 PASSWORD=$(/usr/local/bin/aws secretsmanager get-secret-value \
     --secret-id "$SECRET_ID" \
@@ -89,7 +130,7 @@ try:
     print(data.get("jupyter_password", ""))
 except:
     print("")
-' ) || PASSWORD=""
+' ) || PASSWORD="ChangeMe123!"
 
 if [ -z "$PASSWORD" ]; then
     PASSWORD="ChangeMe123!"
@@ -107,62 +148,9 @@ with open(os.path.join(config_dir, 'jupyter_server_config.json'), 'w') as f:
 "
 
 # ------------------------------------------------------------------
-# 8. Clone / Update Repository (graceful)
+# 11. Create jl wrapper
 # ------------------------------------------------------------------
-echo "Cloning / updating repository..."
-cd /home/ubuntu
-
-if [ -d "state-est-testbed" ]; then
-    echo "Repository exists → pulling latest changes..."
-    cd state-est-testbed
-    git pull --rebase --autostash || echo "Warning: git pull failed (continuing...)"
-else
-    echo "Cloning fresh repository..."
-    git clone https://github.com/mpeaton37/state-est-testbed.git
-    cd state-est-testbed
-fi
-
-# ------------------------------------------------------------------
-# 9. Create demo notebook if missing
-# ------------------------------------------------------------------
-if [ ! -f demo_notebook.ipynb ]; then
-    echo "Creating demo_notebook.ipynb..."
-    cat > demo_notebook.ipynb << 'EON'
-{
- "cells": [
-  {
-   "cell_type": "markdown",
-   "source": [
-    "# state-est-testbed Live Demo\n",
-    "**Simulation-based R&D framework for state estimators and predictors**\n",
-    "\n",
-    "Repository: https://github.com/mpeaton37/state-est-testbed"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "source": [
-    "import pandas as pd\n",
-    "import stateest\n",
-    "print('stateest version:', getattr(stateest, '__version__', 'unknown'))\n",
-    "df = pd.read_csv('maneuver_kalman_test_data.csv')\n",
-    "print(f'Loaded {len(df)} timesteps from simple.py trajectory')"
-   ]
-  }
- ],
- "metadata": {
-  "kernelspec": {"name": "stateest", "display_name": "Python (stateest)"}
- },
- "nbformat": 4,
- "nbformat_minor": 5
-}
-EON
-fi
-
-# ------------------------------------------------------------------
-# 10. Create jl wrapper
-# ------------------------------------------------------------------
-cat << 'EOF' > /usr/local/bin/jl
+cat > /usr/local/bin/jl << 'EOF'
 #!/bin/bash
 CONDA_PLUGINS_AUTO_ACCEPT_TOS=yes \
 /opt/miniconda/bin/conda run -n stateest \
@@ -175,7 +163,7 @@ EOF
 chmod +x /usr/local/bin/jl
 
 # ------------------------------------------------------------------
-# 11. Final Welcome Message
+# 12. Final Welcome Message
 # ------------------------------------------------------------------
 cat << EOF > /home/ubuntu/WELCOME.txt
 ================================================================
@@ -183,9 +171,10 @@ cat << EOF > /home/ubuntu/WELCOME.txt
 ================================================================
 
 Repository: ~/state-est-testbed
-JupyterLab: password protected (from AWS Secrets Manager)
+stateest package: installed (editable)
+Jupyter kernel: registered as "Python (stateest)"
 
-To start:
+Start JupyterLab:
     jl
 
 Access: http://YOUR-EC2-PUBLIC-IP:8888
@@ -196,6 +185,7 @@ EOF
 
 chown -R ubuntu:ubuntu /home/ubuntu
 
+echo "=== Setup Completed Successfully! ==="
 echo "You can safely re-run this script anytime."
 echo "Run 'jl' to start JupyterLab."
 
