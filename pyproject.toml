@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=45", "wheel", "pybind11>=2.10"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "stateest"
+version = "0.1.0.dev0"
+description = "State estimation testbed for Kalman filters and predictors"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = []
+
+[tool.setuptools]
+packages = ["stateest"]
+
+[tool.setuptools.package-dir]
+"stateest" = "python/stateest"
+
+[tool.setuptools.dynamic]
+version = {attr = "stateest.__version__"}
