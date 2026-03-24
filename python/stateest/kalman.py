@@ -1,13 +1,9 @@
-import os
+# python/stateest/kalman.py
+from ._stateest import *
+import warnings
+warnings.warn(
+    "The 'kalman' submodule is deprecated. Use 'import stateest' directly instead.",
+    DeprecationWarning,
+    stacklevel=2
+)
 
-import sys
-
-import subprocess
-
-import numpy as np
-
-import pandas as pd
-
-import matplotlib.pyplot as plt
-
-sys.path.insert(0, os.path.join('..', 'build', 'python_bindings'))

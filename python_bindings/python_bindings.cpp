@@ -8,7 +8,7 @@
 namespace py = pybind11;
 using namespace pybind11::literals;  // for _a syntax
 
-PYBIND11_MODULE(kalman, m) {
+PYBIND11_MODULE(_stateest, m) {
     m.doc() = "Kalman filter bindings for stock/time-series prediction";
 
     py::class_<Estimator, std::unique_ptr<Estimator>>(m, "Estimator")
