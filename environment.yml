@@ -21,7 +21,7 @@ dependencies:
   # C++ libraries used in the core
   - eigen          # header-only, used heavily in KalmanFilter / Config
   - yaml-cpp
-  - sqlite3        # or libsqlite (for the Database layer)
+  - sqlite        # or libsqlite (for the Database layer)
 
   # Python bindings
   - pybind11
