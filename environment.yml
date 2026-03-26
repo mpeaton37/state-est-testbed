@@ -1,14 +1,40 @@
-name: state-est 
+name: kalman-testbed
 channels:
   - conda-forge
+  - defaults
+
 dependencies:
-  - cmake
-  - eigen
-  - yaml-cpp
-  - compilers
-  - make
-  - python
-  - matplotlib
+  # Core Python runtime and data/science stack (used by simple.py, test scripts, viz)
+  - python >=3.10
+  - numpy
   - pandas
-  - gtest
-  - sqlite
+  - matplotlib
+  - pyyaml
+  - scipy   # optional but useful for future filter tuning / stats
+
+  # Build system & C++ dependencies
+  - cmake >=3.18
+  - make
+  - gxx_linux-64   # or clangxx_osx-64 on macOS
+  - ninja          # faster builds (optional but recommended)
+
+  # C++ libraries used in the core
+  - eigen          # header-only, used heavily in KalmanFilter / Config
+  - yaml-cpp
+  - sqlite3        # or libsqlite (for the Database layer)
+
+  # Python bindings
+  - pybind11
+
+  # Testing
+  - gtest          # for the GoogleTest unit tests (test_kalman_filter.cpp)
+  - pytest         # optional for Python-side tests
+
+  # Development / convenience
+  - git
+  - ipython
+  - jupyterlab     # useful for exploring results.db + plots
+
+  # Optional but helpful for estimator R&D
+  # - seaborn
+  # - plotly
