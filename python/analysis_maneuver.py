@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 
 # ─── Adjust these paths ────────────────────────────────────────────────
 import sys
-sys.path.insert(0, "python")           # if not using pip install -e .
+#sys.path.insert(0, "python")           # if not using pip install -e .
 import stateest
 
 DATA_PATH = "maneuver_kalman_test_data.csv"

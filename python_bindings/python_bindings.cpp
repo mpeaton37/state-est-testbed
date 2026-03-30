@@ -41,10 +41,10 @@ PYBIND11_MODULE(_stateest, m) {
             self.predict();
             return self.state()(0);  // return predicted/updated position
         })
-
+        // Improved: return full state vector and full covariance matrix
         .def("get_prediction_and_variance", [](const KalmanFilter& self) -> py::tuple {
             auto s = self.state();
             auto P = self.covariance();
-            return py::make_tuple(s(0), P(0,0));
+            return py::make_tuple(s, P);   // full vector + full matrix
         });
-}
+        }

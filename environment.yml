@@ -1,11 +1,11 @@
-name: kalman-testbed
+name: STATE 
 channels:
   - conda-forge
   - defaults
 
 dependencies:
   # Core Python runtime and data/science stack (used by simple.py, test scripts, viz)
-  - python >=3.10
+  - python=3.12
   - numpy
   - pandas
   - matplotlib

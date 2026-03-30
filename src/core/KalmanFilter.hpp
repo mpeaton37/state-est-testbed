@@ -17,7 +17,9 @@ public:
 
     Eigen::VectorXd state() const override;
     Eigen::MatrixXd covariance() const override;
-
+   
+    // Convenience for Python: return both state and covariance
+    std::pair<Eigen::VectorXd, Eigen::MatrixXd> get_state_and_covariance() const;
 private:
     Eigen::MatrixXd F_, Q_, H_, R_, B_;
     Eigen::VectorXd x_;
