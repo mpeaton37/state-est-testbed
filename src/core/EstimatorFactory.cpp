@@ -17,7 +17,7 @@ std::unique_ptr<Estimator> EstimatorFactory::create(const Config& config) {
         return std::make_unique<UnscentedKalmanFilter>(
             config.Q,
             config.R,
-            static_cast<const DynamicsModel*>(&ukf_model),
+            &ukf_model,
             config.ukf_alpha,
             config.ukf_beta,
             config.ukf_kappa
