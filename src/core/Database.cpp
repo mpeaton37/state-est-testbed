@@ -34,6 +34,7 @@ void Database::createTables() {
         );
     )";
 
+    // Updated CREATE TABLE for time_steps with new columns
     const char* sql_time_steps = R"(
         CREATE TABLE IF NOT EXISTS time_steps (
             run_id INTEGER,
@@ -41,6 +42,8 @@ void Database::createTables() {
             true_state TEXT,
             est_state TEXT,
             est_cov TEXT,
+            model_probs TEXT,
+            hypotheses TEXT,
             PRIMARY KEY (run_id, step),
             FOREIGN KEY (run_id) REFERENCES runs(id)
         );
@@ -59,6 +62,50 @@ void Database::createTables() {
     if (err_msg) { std::cerr << "Error creating experiments table: " << err_msg << std::endl; sqlite3_free(err_msg); }
     sqlite3_exec(reinterpret_cast<sqlite3*>(db_), sql_runs, nullptr, nullptr, &err_msg);
     if (err_msg) { std::cerr << "Error creating runs table: " << err_msg << std::endl; sqlite3_free(err_msg); }
+
+    // Safe ALTER TABLE for model_probs
+    const char* sql_check_model_probs = R"(
+        PRAGMA table_info(time_steps);
+    )";
+    bool has_model_probs = false;
+    sqlite3_stmt* stmt;
+    if (sqlite3_prepare_v2(reinterpret_cast<sqlite3*>(db_), sql_check_model_probs, -1, &stmt, nullptr) == SQLITE_OK) {
+        while (sqlite3_step(stmt) == SQLITE_ROW) {
+            const unsigned char* col_name = sqlite3_column_text(stmt, 1);
+            if (col_name && std::string(reinterpret_cast<const char*>(col_name)) == "model_probs") {
+                has_model_probs = true;
+                break;
+            }
+        }
+    }
+    sqlite3_finalize(stmt);
+    if (!has_model_probs) {
+        char* alter_err = nullptr;
+        sqlite3_exec(reinterpret_cast<sqlite3*>(db_), "ALTER TABLE time_steps ADD COLUMN model_probs TEXT;", nullptr, nullptr, &alter_err);
+        if (alter_err) { std::cerr << "Error adding model_probs column: " << alter_err << std::endl; sqlite3_free(alter_err); }
+    }
+
+    // Safe ALTER TABLE for hypotheses
+    const char* sql_check_hypotheses = R"(
+        PRAGMA table_info(time_steps);
+    )";
+    bool has_hypotheses = false;
+    if (sqlite3_prepare_v2(reinterpret_cast<sqlite3*>(db_), sql_check_hypotheses, -1, &stmt, nullptr) == SQLITE_OK) {
+        while (sqlite3_step(stmt) == SQLITE_ROW) {
+            const unsigned char* col_name = sqlite3_column_text(stmt, 1);
+            if (col_name && std::string(reinterpret_cast<const char*>(col_name)) == "hypotheses") {
+                has_hypotheses = true;
+                break;
+            }
+        }
+    }
+    sqlite3_finalize(stmt);
+    if (!has_hypotheses) {
+        char* alter_err = nullptr;
+        sqlite3_exec(reinterpret_cast<sqlite3*>(db_), "ALTER TABLE time_steps ADD COLUMN hypotheses TEXT;", nullptr, nullptr, &alter_err);
+        if (alter_err) { std::cerr << "Error adding hypotheses column: " << alter_err << std::endl; sqlite3_free(alter_err); }
+    }
+
     sqlite3_exec(reinterpret_cast<sqlite3*>(db_), sql_time_steps, nullptr, nullptr, &err_msg);
     if (err_msg) { std::cerr << "Error creating time_steps table: " << err_msg << std::endl; sqlite3_free(err_msg); }
     sqlite3_exec(reinterpret_cast<sqlite3*>(db_), sql_summary_stats, nullptr, nullptr, &err_msg);
@@ -89,8 +136,13 @@ int Database::insertRun(int experiment_id, int run_id, int seed) {
     return id;
 }
 
-void Database::insertTimeStep(int run_id, int step, const Eigen::VectorXd& true_state, const Eigen::VectorXd& est_state, const Eigen::MatrixXd& est_cov) {
-    std::string sql = "INSERT INTO time_steps (run_id, step, true_state, est_state, est_cov) VALUES (?, ?, ?, ?, ?);";
+void Database::insertTimeStep(int run_id, int step,
+                              const Eigen::VectorXd& true_state,
+                              const Eigen::VectorXd& est_state,
+                              const Eigen::MatrixXd& est_cov,
+                              const std::string& model_probs_json,
+                              const std::string& hypotheses_json) {
+    std::string sql = "INSERT INTO time_steps (run_id, step, true_state, est_state, est_cov, model_probs, hypotheses) VALUES (?, ?, ?, ?, ?, ?, ?);";
     sqlite3_stmt* stmt;
     sqlite3_prepare_v2(reinterpret_cast<sqlite3*>(db_), sql.c_str(), -1, &stmt, nullptr);
     sqlite3_bind_int(stmt, 1, run_id);
@@ -98,6 +150,19 @@ void Database::insertTimeStep(int run_id, int step, const Eigen::VectorXd& true_
     sqlite3_bind_text(stmt, 3, serializeVector(true_state).c_str(), -1, SQLITE_TRANSIENT);
     sqlite3_bind_text(stmt, 4, serializeVector(est_state).c_str(), -1, SQLITE_TRANSIENT);
     sqlite3_bind_text(stmt, 5, serializeMatrix(est_cov).c_str(), -1, SQLITE_TRANSIENT);
+
+    // Handle "null" string as actual SQL NULL
+    if (model_probs_json == "null") {
+        sqlite3_bind_null(stmt, 6);
+    } else {
+        sqlite3_bind_text(stmt, 6, model_probs_json.c_str(), -1, SQLITE_TRANSIENT);
+    }
+    if (hypotheses_json == "null") {
+        sqlite3_bind_null(stmt, 7);
+    } else {
+        sqlite3_bind_text(stmt, 7, hypotheses_json.c_str(), -1, SQLITE_TRANSIENT);
+    }
+
     sqlite3_step(stmt);
     sqlite3_finalize(stmt);
 }
