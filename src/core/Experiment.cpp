@@ -2,18 +2,24 @@
 #include "KalmanFilter.hpp"
 #include "LinearGaussianModel.hpp"
 #include "Database.hpp"
+#include "EstimatorFactory.hpp"
 #include <iostream>
 #include <random>
 #include <vector>
+#include <memory>
 
 Experiment::Experiment(const Config& config, Database* db, int run_id)
     : config_(config), db_(db), run_id_(run_id) {}
 
 void Experiment::run() {
+    // Create the appropriate estimator using the factory
+    std::unique_ptr<Estimator> estimator = EstimatorFactory::create(config_);
+
+    // Create the appropriate dynamics model (for truth propagation)
+    // For now, always use LinearGaussianModel for truth (could extend for nonlinear)
     LinearGaussianModel model(config_.F, config_.H, config_.B);
 
-    KalmanFilter kf(config_.F, config_.Q, config_.H, config_.R, config_.B);
-    kf.init(config_.x0_est, config_.P0);
+    estimator->init(config_.x0_est, config_.P0);
 
     Eigen::VectorXd x_true = config_.x0_true;
 
@@ -45,19 +51,19 @@ void Experiment::run() {
         }
         Eigen::VectorXd z = model.measure(x_true) + v;
 
-        kf.predict(u);
-        kf.update(z);
+        estimator->predict(u);
+        estimator->update(z);
 
         // Store for RMSE
         true_states.push_back(x_true);
-        est_states.push_back(kf.state());
+        est_states.push_back(estimator->state());
 
         // Log to database
-        db_->insertTimeStep(run_id_, k, x_true, kf.state(), kf.covariance());
+        db_->insertTimeStep(run_id_, k, x_true, estimator->state(), estimator->covariance());
 
         std::cout << "Step " << k
                   << " | True: " << x_true.transpose()
-                  << " | Est: " << kf.state().transpose()
+                  << " | Est: " << estimator->state().transpose()
                   << std::endl;
     }
 
