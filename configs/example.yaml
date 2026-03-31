@@ -17,7 +17,7 @@ measurement:
   observation_matrix: [[1.0, 0.0]]
   measurement_noise: 0.1
 
-estimator_type: ukf   # Options: kf, ekf, ukf, imm, mht
+estimator_type: ekf   # Options: kf, ekf, ukf, imm, mht
 model_type: nonlinear # Options: linear, nonlinear
 
 ukf:

@@ -17,7 +17,7 @@ void Experiment::run() {
 
     // Create the appropriate dynamics model (for truth propagation)
     // For now, always use LinearGaussianModel for truth (could extend for nonlinear)
-    LinearGaussianModel model(config_.F, config_.H, config_.B);
+    LinearGaussianModel truth_model(config_.F, config_.H, config_.B);
 
     estimator->init(config_.x0_est, config_.P0);
 
@@ -42,7 +42,7 @@ void Experiment::run() {
         for (int i = 0; i < config_.state_dim; ++i) {
             w(i) = process_noise(gen) * std::sqrt(config_.Q(i, i));
         }
-        x_true = model.propagate(x_true, u) + w;
+        x_true = truth_model.propagate(x_true, u) + w;
 
         // Generate measurement with measurement noise
         Eigen::VectorXd v(config_.H.rows());

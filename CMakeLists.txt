@@ -32,6 +32,8 @@ add_executable(state_est_testbed
     src/core/KalmanFilter.cpp
     src/core/LinearGaussianModel.cpp
     src/core/EstimatorFactory.cpp
+    src/core/UnscentedKalmanFilter.cpp
+    src/core/ExtendedKalmanFilter.cpp
 )
 
 target_include_directories(state_est_testbed PRIVATE src)
