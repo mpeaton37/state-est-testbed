@@ -13,5 +13,5 @@ private:
     Config config_;
     Database* db_;
     int run_id_;
-    EstimatorFactory* estimator_factory_; // Declaration of EstimatorFactory pointer
+    // Remove unused EstimatorFactory* pointer; use static factory method instead
 };
