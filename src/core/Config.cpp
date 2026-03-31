@@ -134,6 +134,22 @@ Config Config::fromFile(const std::string& path) {
         if (ukf["kappa"]) c.ukf_kappa = ukf["kappa"].as<double>();
     }
 
+    // EKF parameters (new - added for ExtendedKalmanFilter support)
+    if (node["ekf"]) {
+        auto ekf = node["ekf"];
+        // Currently EKF uses the same matrices as base config (F, Q, H, R, B)
+        // Add specific parameters here in the future if needed (e.g. tuning, numerical settings)
+        if (ekf["alpha"]) c.ekf_alpha = ekf["alpha"].as<double>();           // example placeholder
+//        if (ekf["beta"])  c.ekf_beta  = ekf["beta"].as<double>();            // example placeholder
+    }
+
+    // Particle Filter parameters
+    if (node["pf"]) {
+        auto pf = node["pf"];
+        if (pf["num_particles"])     c.pf_num_particles     = pf["num_particles"].as<int>();
+        if (pf["resample_threshold"]) c.pf_resample_threshold = pf["resample_threshold"].as<double>();
+    }
+
     // MHT parameters
     if (node["mht"]) {
         auto mht = node["mht"];

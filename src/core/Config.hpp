@@ -16,11 +16,11 @@ struct Config {
 
     Eigen::MatrixXd F, Q, H, R, B;
 
-    // New fields for estimator/model selection
-    std::string estimator_type; // "kf", "ekf", "ukf", "imm", "mht"
+    // Estimator / model selection
+    std::string estimator_type; // "kf", "ukf", "ekf", "imm", "mht"
     std::string model_type;     // "linear", "nonlinear", etc.
 
-    // IMM: sub-model configs (for IMM, each sub-model can have its own config)
+    // IMM support
     std::vector<Config> imm_submodels;
     Eigen::MatrixXd imm_transition_matrix;
     std::vector<double> imm_initial_probs;
@@ -30,9 +30,17 @@ struct Config {
     double ukf_beta = 2.0;
     double ukf_kappa = 0.0;
 
+    // EKF parameters 
+    // Currently minimal - can be extended later (e.g. for adaptive tuning, numerical stability, etc.)
+    double ekf_alpha = 1e-3;   // placeholder for future EKF-specific tuning
+
     // MHT parameters
     double mht_gating_threshold = 9.21; // Default: chi2(2) 99% ≈ 9.21
     int mht_max_hypotheses = 10;
+
+    // Particle Filter parameters
+    int pf_num_particles = 1000;           // Number of particles
+    double pf_resample_threshold = 0.5;    // Effective sample size ratio to trigger resampling (0.0 = always resample)
 
     static Config fromFile(const std::string& path);
 };

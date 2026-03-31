@@ -49,7 +49,7 @@ void Experiment::run() {
         for (int i = 0; i < config_.H.rows(); ++i) {
             v(i) = meas_noise(gen) * std::sqrt(config_.R(i, i));
         }
-        Eigen::VectorXd z = model.measure(x_true) + v;
+        Eigen::VectorXd z = truth_model.measure(x_true) + v;
 
         estimator->predict(u);
         estimator->update(z);
