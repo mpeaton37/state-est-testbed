@@ -66,6 +66,81 @@ Config Config::fromFile(const std::string& path) {
     double meas_noise = measurement["measurement_noise"].as<double>();
     c.R = Eigen::MatrixXd::Identity(meas_dim, meas_dim) * meas_noise;
 
+    // Load estimator/model type (optional)
+    if (node["estimator_type"])
+        c.estimator_type = node["estimator_type"].as<std::string>();
+    else
+        c.estimator_type = "kf";
+
+    if (node["model_type"])
+        c.model_type = node["model_type"].as<std::string>();
+    else
+        c.model_type = "linear";
+
+    // IMM support
+    if (node["imm"]) {
+        auto imm = node["imm"];
+        // Sub-models
+        if (imm["submodels"]) {
+            for (const auto& sub : imm["submodels"]) {
+                Config sub_cfg = c; // inherit base config, override below
+                if (sub["F"]) {
+                    for (int i = 0; i < c.state_dim; ++i)
+                        for (int j = 0; j < c.state_dim; ++j)
+                            sub_cfg.F(i, j) = sub["F"][i][j].as<double>();
+                }
+                if (sub["Q"]) {
+                    for (int i = 0; i < c.state_dim; ++i)
+                        for (int j = 0; j < c.state_dim; ++j)
+                            sub_cfg.Q(i, j) = sub["Q"][i][j].as<double>();
+                }
+                if (sub["H"]) {
+                    for (int i = 0; i < c.H.rows(); ++i)
+                        for (int j = 0; j < c.H.cols(); ++j)
+                            sub_cfg.H(i, j) = sub["H"][i][j].as<double>();
+                }
+                if (sub["R"]) {
+                    for (int i = 0; i < c.R.rows(); ++i)
+                        for (int j = 0; j < c.R.cols(); ++j)
+                            sub_cfg.R(i, j) = sub["R"][i][j].as<double>();
+                }
+                if (sub["model_type"])
+                    sub_cfg.model_type = sub["model_type"].as<std::string>();
+                if (sub["estimator_type"])
+                    sub_cfg.estimator_type = sub["estimator_type"].as<std::string>();
+                c.imm_submodels.push_back(sub_cfg);
+            }
+        }
+        // Transition matrix
+        if (imm["transition_matrix"]) {
+            int n = imm["transition_matrix"].size();
+            c.imm_transition_matrix = Eigen::MatrixXd(n, n);
+            for (int i = 0; i < n; ++i)
+                for (int j = 0; j < n; ++j)
+                    c.imm_transition_matrix(i, j) = imm["transition_matrix"][i][j].as<double>();
+        }
+        // Initial probabilities
+        if (imm["initial_probs"]) {
+            for (size_t i = 0; i < imm["initial_probs"].size(); ++i)
+                c.imm_initial_probs.push_back(imm["initial_probs"][i].as<double>());
+        }
+    }
+
+    // UKF parameters
+    if (node["ukf"]) {
+        auto ukf = node["ukf"];
+        if (ukf["alpha"]) c.ukf_alpha = ukf["alpha"].as<double>();
+        if (ukf["beta"])  c.ukf_beta  = ukf["beta"].as<double>();
+        if (ukf["kappa"]) c.ukf_kappa = ukf["kappa"].as<double>();
+    }
+
+    // MHT parameters
+    if (node["mht"]) {
+        auto mht = node["mht"];
+        if (mht["gating_threshold"]) c.mht_gating_threshold = mht["gating_threshold"].as<double>();
+        if (mht["max_hypotheses"])   c.mht_max_hypotheses   = mht["max_hypotheses"].as<int>();
+    }
+
     // Load Monte Carlo settings (if present)
     if (node["monte_carlo"]) {
         auto mc = node["monte_carlo"];
