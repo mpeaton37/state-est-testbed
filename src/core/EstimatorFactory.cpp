@@ -12,14 +12,12 @@ std::unique_ptr<Estimator> EstimatorFactory::create(const Config& config) {
             config.F, config.Q, config.H, config.R, config.B
         );
     } else if (config.estimator_type == "ukf") {
-        // For UKF, create a LinearGaussianModel (could be extended for nonlinear)
-        // Model is NOT owned by UKF, so we must keep it alive somewhere else if needed.
-        // Here, we use a static to persist for the lifetime of the process (testbed is single-threaded).
+        // For UKF, create a static LinearGaussianModel (implements DynamicsModel)
         static LinearGaussianModel ukf_model(config.F, config.H, config.B);
         return std::make_unique<UnscentedKalmanFilter>(
             config.Q,
             config.R,
-            &ukf_model,
+            static_cast<const DynamicsModel*>(&ukf_model),
             config.ukf_alpha,
             config.ukf_beta,
             config.ukf_kappa
