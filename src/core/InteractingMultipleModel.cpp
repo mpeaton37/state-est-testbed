@@ -11,14 +11,19 @@ InteractingMultipleModel::InteractingMultipleModel(std::vector<std::unique_ptr<E
       transition_matrix_(transition_matrix),
       model_probs_(initial_probs)
 {
-    if (num_models_ < 2) throw std::invalid_argument("IMM requires at least two models");
-    if (transition_matrix_.rows() != num_models_ || transition_matrix_.cols() != num_models_)
+    if (num_models_ < 2) {
+        throw std::invalid_argument("IMM requires at least two models");
+    }
+    if (transition_matrix_.rows() != static_cast<int>(num_models_) || transition_matrix_.cols() != static_cast<int>(num_models_)) {
         throw std::invalid_argument("Transition matrix size mismatch");
-    if (model_probs_.size() != num_models_)
+    }
+    if (model_probs_.size() != num_models_) {
         throw std::invalid_argument("Initial model probabilities size mismatch");
+    }
     double sum = std::accumulate(model_probs_.begin(), model_probs_.end(), 0.0);
-    if (std::abs(sum - 1.0) > 1e-6)
+    if (std::abs(sum - 1.0) > 1e-6) {
         throw std::invalid_argument("Initial model probabilities must sum to 1");
+    }
 }
 
 void InteractingMultipleModel::init(const Eigen::VectorXd& x0, const Eigen::MatrixXd& P0) {
