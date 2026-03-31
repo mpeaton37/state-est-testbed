@@ -2,6 +2,7 @@
 #include "Config.hpp"
 
 class Database;
+class EstimatorFactory; // Forward declaration
 
 class Experiment {
 public:
@@ -12,4 +13,5 @@ private:
     Config config_;
     Database* db_;
     int run_id_;
+    EstimatorFactory* estimator_factory_; // Declaration of EstimatorFactory pointer
 };
