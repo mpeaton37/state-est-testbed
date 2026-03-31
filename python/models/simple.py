@@ -46,7 +46,7 @@ for i in range(1, n):
     a_z = -9.81 + lift
     
     # Total acceleration
-    a = a_drag + np.array([0.0, a_y, a_z])
+    a = a_drag + np.array([0.0, a_y, a_z]) 
     
     # Integrate velocity & position (semi-implicit Euler for stability)
     vel[i] = vel[i-1] + a * dt
