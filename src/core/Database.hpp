@@ -10,7 +10,7 @@ public:
 
     void createTables();
     int insertExperiment(const std::string& config_path);
-    int insertRun(int experiment_id, int run_id, int seed);
+  int insertRun(int experiment_id, int run_id, int seed, const std::string& estimator_type = "unknown");
     void insertTimeStep(int run_id, int step,
                         const Eigen::VectorXd& true_state,
                         const Eigen::VectorXd& est_state,

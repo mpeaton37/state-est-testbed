@@ -14,7 +14,7 @@ int main(int argc, char** argv) {
     int experiment_id = db.insertExperiment(argv[1]);
 
     for (int i = 0; i < config.num_runs; ++i) {
-        int run_id = db.insertRun(experiment_id, i, config.base_seed + i);
+        int run_id = db.insertRun(experiment_id, i, config.base_seed + i, config.estimator_type);
         Experiment experiment(config, &db, run_id);
         experiment.run();
     }
