@@ -41,7 +41,7 @@ std::unique_ptr<Estimator> EstimatorFactory::create(const Config& config) {
     }
     else if (config.estimator_type == "pf") {
         ParticleFilter::Params pf_params;
-        pf_params.num_particles = config.pf_num_particles;
+        pf_params.num_particles      = config.pf_num_particles;
         pf_params.resample_threshold = config.pf_resample_threshold;
 
         static LinearGaussianModel pf_model(config.F, config.H, config.B);
@@ -49,8 +49,8 @@ std::unique_ptr<Estimator> EstimatorFactory::create(const Config& config) {
         return std::make_unique<ParticleFilter>(
             config.Q,
             config.R,
-            &pf_model      
-            pf_params
+            &pf_model,
+            pf_params          // must pass explicitly now
         );
     }
     // Future extensions:

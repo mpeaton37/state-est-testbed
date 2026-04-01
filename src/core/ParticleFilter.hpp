@@ -9,14 +9,14 @@ class ParticleFilter : public Estimator {
 public:
     struct Params {
         int    num_particles      = 1000;
-        double resample_threshold = 0.5;   // ESS / N threshold
+        double resample_threshold = 0.5;
     };
 
-    // Constructor - default argument removed to avoid initialization order issue
+    // Default argument removed to avoid compiler initialization order issues
     ParticleFilter(const Eigen::MatrixXd& Q,
                    const Eigen::MatrixXd& R,
                    const DynamicsModel* model,
-                   Params params = Params());   // Pass by value is fine and simpler here
+                   Params params);
 
     void init(const Eigen::VectorXd& x0, const Eigen::MatrixXd& P0) override;
 
@@ -27,7 +27,7 @@ public:
     Eigen::MatrixXd covariance() const override;
 
 private:
-    const DynamicsModel* model_;   // not owned
+    const DynamicsModel* model_;
     Eigen::MatrixXd Q_;
     Eigen::MatrixXd R_;
 
