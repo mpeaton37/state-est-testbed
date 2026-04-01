@@ -102,6 +102,7 @@ void Database::createTables() {
     add_column_if_missing("time_steps", "model_probs", "ALTER TABLE time_steps ADD COLUMN model_probs TEXT;");
     add_column_if_missing("time_steps", "hypotheses",  "ALTER TABLE time_steps ADD COLUMN hypotheses TEXT;");
     add_column_if_missing("runs",       "estimator_type", "ALTER TABLE runs ADD COLUMN estimator_type TEXT;");
+    add_column_if_missing("runs", "experiment_tag", "ALTER TABLE runs ADD COLUMN experiment_tag TEXT;");
 
     sqlite3_exec(reinterpret_cast<sqlite3*>(db_), sql_time_steps, nullptr, nullptr, &err_msg);
     if (err_msg) { 
@@ -127,14 +128,20 @@ int Database::insertExperiment(const std::string& config_path) {
     return id;
 }
 
-int Database::insertRun(int experiment_id, int run_id, int seed, const std::string& estimator_type) {
-    std::string sql = "INSERT INTO runs (experiment_id, run_id, seed, estimator_type) VALUES (?, ?, ?, ?);";
-    sqlite3_stmt* stmt;
+int Database::insertRun(int experiment_id, int run_id, int seed, 
+                       const std::string& estimator_type,
+                       const std::string& experiment_tag) {
+    std::string sql = "INSERT INTO runs (experiment_id, run_id, seed, estimator_type, experiment_tag) "
+                      "VALUES (?, ?, ?, ?, ?);";
+    sqlite3_stmt* stmt = nullptr;
     sqlite3_prepare_v2(reinterpret_cast<sqlite3*>(db_), sql.c_str(), -1, &stmt, nullptr);
+    
     sqlite3_bind_int(stmt, 1, experiment_id);
     sqlite3_bind_int(stmt, 2, run_id);
     sqlite3_bind_int(stmt, 3, seed);
     sqlite3_bind_text(stmt, 4, estimator_type.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 5, experiment_tag.c_str(), -1, SQLITE_STATIC);
+    
     sqlite3_step(stmt);
     int id = sqlite3_last_insert_rowid(reinterpret_cast<sqlite3*>(db_));
     sqlite3_finalize(stmt);
