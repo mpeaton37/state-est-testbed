@@ -1,29 +1,16 @@
 state_dimension: 2
 num_time_steps: 100
 dt: 0.1
-
 initial:
   true_state: [0.0, 1.0]
   est_state: [0.0, 0.0]
   initial_cov: 1.0
-
 dynamics:
   state_transition:
     - [1.0, 0.1]
     - [0.0, 1.0]
   process_noise_diag: [0.01, 0.005]
-  control_matrix: [[0.0], [0.0]]
-
 measurement:
   observation_matrix: [[1.0, 0.0]]
   measurement_noise: 0.1
-
 estimator_type: kf
-
-pf:
-  num_particles: 2000
-  resample_threshold: 0.6
-
-monte_carlo:
-  runs: 1
-  base_seed: 42

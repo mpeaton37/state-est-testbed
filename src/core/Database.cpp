@@ -16,6 +16,8 @@ Database::~Database() {
 }
 
 void Database::createTables() {
+    char* err_msg = nullptr;
+
     const char* sql_experiments = R"(
         CREATE TABLE IF NOT EXISTS experiments (
             id INTEGER PRIMARY KEY,
@@ -31,6 +33,7 @@ void Database::createTables() {
             run_id INTEGER,
             seed INTEGER,
             estimator_type TEXT,
+            experiment_tag TEXT,
             FOREIGN KEY (experiment_id) REFERENCES experiments(id)
         );
     )";
@@ -57,75 +60,19 @@ void Database::createTables() {
         );
     )";
 
-    char* err_msg = nullptr;
-
     sqlite3_exec(reinterpret_cast<sqlite3*>(db_), sql_experiments, nullptr, nullptr, &err_msg);
-    if (err_msg) { 
-        std::cerr << "Error creating experiments table: " << err_msg << std::endl; 
-        sqlite3_free(err_msg); 
-    }
+    if (err_msg) { std::cerr << "Error experiments: " << err_msg << std::endl; sqlite3_free(err_msg); err_msg = nullptr; }
 
     sqlite3_exec(reinterpret_cast<sqlite3*>(db_), sql_runs, nullptr, nullptr, &err_msg);
-    if (err_msg) { 
-        std::cerr << "Error creating runs table: " << err_msg << std::endl; 
-        sqlite3_free(err_msg); 
-    }
-
-    // Helper lambda to safely add columns if they don't exist
-    auto add_column_if_missing = [&](const std::string& table, const std::string& column, const std::string& alter_sql) {
-        bool has_column = false;
-        sqlite3_stmt* stmt = nullptr;
-        std::string check_sql = "PRAGMA table_info(" + table + ");";
-
-        if (sqlite3_prepare_v2(reinterpret_cast<sqlite3*>(db_), check_sql.c_str(), -1, &stmt, nullptr) == SQLITE_OK) {
-            while (sqlite3_step(stmt) == SQLITE_ROW) {
-                const unsigned char* col_name = sqlite3_column_text(stmt, 1);
-                if (col_name && std::string(reinterpret_cast<const char*>(col_name)) == column) {
-                    has_column = true;
-                    break;
-                }
-            }
-        }
-        sqlite3_finalize(stmt);
-
-        if (!has_column) {
-            char* alter_err = nullptr;
-            sqlite3_exec(reinterpret_cast<sqlite3*>(db_), alter_sql.c_str(), nullptr, nullptr, &alter_err);
-            if (alter_err) {
-                std::cerr << "Error adding column " << column << " to " << table << ": " << alter_err << std::endl;
-                sqlite3_free(alter_err);
-            }
-        }
-    };
-
-    // Add missing columns safely
-    add_column_if_missing("time_steps", "model_probs", "ALTER TABLE time_steps ADD COLUMN model_probs TEXT;");
-    add_column_if_missing("time_steps", "hypotheses",  "ALTER TABLE time_steps ADD COLUMN hypotheses TEXT;");
-    add_column_if_missing("runs",       "estimator_type", "ALTER TABLE runs ADD COLUMN estimator_type TEXT;");
-    add_column_if_missing("runs", "experiment_tag", "ALTER TABLE runs ADD COLUMN experiment_tag TEXT;");
+    if (err_msg) { std::cerr << "Error runs: " << err_msg << std::endl; sqlite3_free(err_msg); err_msg = nullptr; }
 
     sqlite3_exec(reinterpret_cast<sqlite3*>(db_), sql_time_steps, nullptr, nullptr, &err_msg);
-    if (err_msg) { 
-        std::cerr << "Error creating time_steps table: " << err_msg << std::endl; 
-        sqlite3_free(err_msg); 
-    }
+    if (err_msg) { std::cerr << "Error time_steps: " << err_msg << std::endl; sqlite3_free(err_msg); err_msg = nullptr; }
 
     sqlite3_exec(reinterpret_cast<sqlite3*>(db_), sql_summary_stats, nullptr, nullptr, &err_msg);
-    if (err_msg) { 
-        std::cerr << "Error creating summary_stats table: " << err_msg << std::endl; 
-        sqlite3_free(err_msg); 
-    }
-}
+    if (err_msg) { std::cerr << "Error summary_stats: " << err_msg << std::endl; sqlite3_free(err_msg); err_msg = nullptr; }
 
-int Database::insertExperiment(const std::string& config_path) {
-    std::string sql = "INSERT INTO experiments (config_path) VALUES (?);";
-    sqlite3_stmt* stmt;
-    sqlite3_prepare_v2(reinterpret_cast<sqlite3*>(db_), sql.c_str(), -1, &stmt, nullptr);
-    sqlite3_bind_text(stmt, 1, config_path.c_str(), -1, SQLITE_STATIC);
-    sqlite3_step(stmt);
-    int id = sqlite3_last_insert_rowid(reinterpret_cast<sqlite3*>(db_));
-    sqlite3_finalize(stmt);
-    return id;
+    std::cout << "[Database] All tables created successfully." << std::endl;
 }
 
 int Database::insertRun(int experiment_id, int run_id, int seed, 
@@ -143,6 +90,16 @@ int Database::insertRun(int experiment_id, int run_id, int seed,
     sqlite3_bind_text(stmt, 5, experiment_tag.c_str(), -1, SQLITE_STATIC);
     
     sqlite3_step(stmt);
+    sqlite3_finalize(stmt);
+    return run_id;        // Return the run_id we passed in (this is the critical fix)
+}
+
+int Database::insertExperiment(const std::string& config_path) {
+    std::string sql = "INSERT INTO experiments (config_path) VALUES (?);";
+    sqlite3_stmt* stmt = nullptr;
+    sqlite3_prepare_v2(reinterpret_cast<sqlite3*>(db_), sql.c_str(), -1, &stmt, nullptr);
+    sqlite3_bind_text(stmt, 1, config_path.c_str(), -1, SQLITE_STATIC);
+    sqlite3_step(stmt);
     int id = sqlite3_last_insert_rowid(reinterpret_cast<sqlite3*>(db_));
     sqlite3_finalize(stmt);
     return id;
@@ -151,37 +108,22 @@ int Database::insertRun(int experiment_id, int run_id, int seed,
 void Database::insertTimeStep(int run_id, int step,
                               const Eigen::VectorXd& true_state,
                               const Eigen::VectorXd& est_state,
-                              const Eigen::MatrixXd& est_cov,
-                              const std::string& model_probs_json,
-                              const std::string& hypotheses_json) {
-    std::string sql = "INSERT INTO time_steps (run_id, step, true_state, est_state, est_cov, model_probs, hypotheses) VALUES (?, ?, ?, ?, ?, ?, ?);";
-    sqlite3_stmt* stmt;
+                              const Eigen::MatrixXd& est_cov) {
+    std::string sql = "INSERT INTO time_steps (run_id, step, true_state, est_state, est_cov) VALUES (?, ?, ?, ?, ?);";
+    sqlite3_stmt* stmt = nullptr;
     sqlite3_prepare_v2(reinterpret_cast<sqlite3*>(db_), sql.c_str(), -1, &stmt, nullptr);
     sqlite3_bind_int(stmt, 1, run_id);
     sqlite3_bind_int(stmt, 2, step);
     sqlite3_bind_text(stmt, 3, serializeVector(true_state).c_str(), -1, SQLITE_TRANSIENT);
     sqlite3_bind_text(stmt, 4, serializeVector(est_state).c_str(), -1, SQLITE_TRANSIENT);
     sqlite3_bind_text(stmt, 5, serializeMatrix(est_cov).c_str(), -1, SQLITE_TRANSIENT);
-
-    // Handle "null" string as actual SQL NULL
-    if (model_probs_json == "null") {
-        sqlite3_bind_null(stmt, 6);
-    } else {
-        sqlite3_bind_text(stmt, 6, model_probs_json.c_str(), -1, SQLITE_TRANSIENT);
-    }
-    if (hypotheses_json == "null") {
-        sqlite3_bind_null(stmt, 7);
-    } else {
-        sqlite3_bind_text(stmt, 7, hypotheses_json.c_str(), -1, SQLITE_TRANSIENT);
-    }
-
     sqlite3_step(stmt);
     sqlite3_finalize(stmt);
 }
 
 void Database::insertSummary(int run_id, double rmse) {
     std::string sql = "INSERT INTO summary_stats (run_id, rmse) VALUES (?, ?);";
-    sqlite3_stmt* stmt;
+    sqlite3_stmt* stmt = nullptr;
     sqlite3_prepare_v2(reinterpret_cast<sqlite3*>(db_), sql.c_str(), -1, &stmt, nullptr);
     sqlite3_bind_int(stmt, 1, run_id);
     sqlite3_bind_double(stmt, 2, rmse);
