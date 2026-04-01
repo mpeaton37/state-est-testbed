@@ -25,8 +25,11 @@ int main(int argc, char** argv) {
 
     int experiment_id = db.insertExperiment(config_path);
 
-    std::cout << "Running " << config.estimator_type 
-              << " estimator with tag: " << (experiment_tag.empty() ? "(none)" : experiment_tag) << std::endl;
+    std::cout << "=== Starting Experiment ===\n";
+    std::cout << "Config      : " << config_path << "\n";
+    std::cout << "Estimator   : " << config.estimator_type << "\n";
+    if (!experiment_tag.empty()) std::cout << "Tag         : " << experiment_tag << "\n";
+    std::cout << "Num runs    : " << config.num_runs << "\n\n";
 
     static int global_run_counter = 0;
 
@@ -39,11 +42,12 @@ int main(int argc, char** argv) {
             experiment_tag
         );
 
+        std::cout << "→ Starting run " << i << " (global run_id = " << run_id << ")\n";
+
         Experiment experiment(config, &db, run_id);
         experiment.run();
     }
 
-    std::cout << "Completed " << config.num_runs << " run(s) for estimator: " 
-              << config.estimator_type << std::endl;
+    std::cout << "\nAll runs completed for tag: " << (experiment_tag.empty() ? "(none)" : experiment_tag) << "\n";
     return 0;
 }

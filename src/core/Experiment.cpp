@@ -24,6 +24,10 @@ void Experiment::run() {
     int control_dim = config_.B.cols();
     Eigen::VectorXd u = Eigen::VectorXd::Ones(control_dim) * 0.1;
 
+    // Store states for RMSE calculation
+    std::vector<Eigen::VectorXd> true_states;
+    std::vector<Eigen::VectorXd> est_states;
+
     for (int k = 0; k < config_.num_steps; ++k) {
         // Propagate true state
         Eigen::VectorXd w(config_.state_dim);
@@ -42,7 +46,23 @@ void Experiment::run() {
         estimator->predict(u);
         estimator->update(z);
 
+        // Store for RMSE
+        true_states.push_back(x_true);
+        est_states.push_back(estimator->state());
+
         // Log to database
         db_->insertTimeStep(run_id_, k, x_true, estimator->state(), estimator->covariance());
     }
+
+    // Compute and log RMSE summary
+    double rmse = 0.0;
+    for (size_t k = 0; k < true_states.size(); ++k) {
+        Eigen::VectorXd error = true_states[k] - est_states[k];
+        rmse += error.squaredNorm();
+    }
+    rmse = std::sqrt(rmse / true_states.size());
+
+    db_->insertSummary(run_id_, rmse);
+
+    std::cout << "Run " << run_id_ << " completed. RMSE = " << rmse << std::endl;
 }
