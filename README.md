@@ -1,212 +1,139 @@
 # State Estimation Testbed
 
-A modular, simulation-based C++ framework for developing and evaluating state estimation algorithms, starting with the linear Kalman Filter (KF).
+A modular, simulation-based C++ framework for developing and evaluating state estimation algorithms.
 
 ---
 
-## 🚀 Overview
+## Overview
 
 This project provides a reproducible, extensible environment for:
 
 * Simulating linear dynamical systems
-* Running Kalman Filter-based estimators
+* Running Kalman Filter-based estimators (KF, UKF, EKF, PF)
 * Performing Monte Carlo experiments
-* Evaluating statistical consistency (RMSE, NEES)
+* Evaluating statistical consistency (RMSE)
 * Visualizing results via Python tools
 
-Designed for rapid experimentation and future extension to nonlinear filters (EKF, UKF, particle filters).
-
 ---
 
-## ✨ Features (MVP)
+## Features
 
 * Linear time-invariant Gaussian models
-* Kalman Filter (1D, 2D, 3D, extensible to N-D via Eigen)
+* Kalman Filter (KF)
+* Unscented Kalman Filter (UKF)
+* Extended Kalman Filter (EKF)
+* Particle Filter (PF)
 * YAML-based configuration
 * Monte Carlo batch execution
-* SQLite result storage + CSV export
-* Python visualization scripts (matplotlib, seaborn)
+* SQLite result storage
+* Python visualization scripts
 * Reproducible runs via deterministic seeding
-* Unit & integration tests (GoogleTest)
 
 ---
 
-## 🧱 Project Structure
-
+## Project Structure
 ```
 state-est-testbed/
 ├── CMakeLists.txt
-├── environment.yml
 ├── README.md
 ├── configs/
 ├── src/
 │   ├── main.cpp
 │   ├── core/
-│   ├── utils/
-├── tests/
-├── scripts/
+│   │   ├── Config.cpp
+│   │   ├── Database.cpp
+│   │   ├── EstimatorFactory.cpp
+│   │   ├── Experiment.cpp
+│   │   ├── KalmanFilter.cpp
+│   │   ├── UnscentedKalmanFilter.cpp
+│   │   ├── ExtendedKalmanFilter.cpp
+│   │   ├── ParticleFilter.cpp
+│   │   └── LinearGaussianModel.cpp
+├── python/
+│   └── compare_estimators.py
 └── docs/
     └── SDD.md
 ```
-
 ---
 
-## ⚙️ Setup
+## Quick Start
 
-### 1. Create Environment
+### 1. Build
 
-```bash
-conda env create -f environment.yml
-conda activate state-est
-```
-
-### 2. Build
-
-```bash
 mkdir build && cd build
-cmake .. -DCMAKE_BUILD_TYPE=Release
+cmake ..
 cmake --build . --parallel
-```
+
+### 2. Run a single estimator
+
+./build/state_est_testbed ./configs/test_kf.yaml --tag "my_test"
+
+### 3. Run all estimators
+
+./run_all_estimators.sh
+
+### 4. Compare results
+
+python ./python/compare_estimators.py --tag "my_test"
 
 ---
 
-## ▶️ Running an Experiment
+## Available Estimators
 
-```bash
-./state_est_testbed ../configs/example.yaml
-```
-
----
-
-## 📊 Output
-
-* SQLite database (`results.db`)
-* Optional CSV per run
-* Python plots:
-
-  * Trajectories (true vs estimated)
-  * Error + ±3σ bounds
-  * RMSE and NEES statistics
+Estimator | Type                        | Best For
+----------|-----------------------------|------------------------
+kf        | Linear Kalman Filter        | Linear Gaussian systems
+ukf       | Unscented Kalman Filter     | Mildly nonlinear systems
+ekf       | Extended Kalman Filter      | Differentiable nonlinearities
+pf        | Particle Filter             | Highly nonlinear / non-Gaussian systems
 
 ---
 
-## 📈 Metrics
-
-* **RMSE** — Root Mean Square Error
-* **NEES** — Normalized Estimation Error Squared
-
-  * Used for consistency validation
-  * Expected mean ≈ state dimension
-
----
-
-## 🧪 Testing
-
-### Running Tests
-
-After building the project, run the full test suite with:
-
-```bash
-ctest
-```
-
-For more control:
-
-```bash
-ctest --verbose                    # Show detailed test output
-ctest -R KalmanFilterTest          # Run only KalmanFilter unit tests
-ctest -R IntegrationTest           # Run the end-to-end integration test
-ctest -N                           # List all available tests
-```
-
-To run the unit test executable directly:
-
-```bash
-./build/test_kalman_filter
-```
-
-**Current test coverage includes:**
-* KalmanFilter predict/update logic
-* Basic state and covariance checks
-* Integration test that runs the full pipeline with `configs/test.yaml`
-
-To improve coverage further, additional tests for `Config`, `Database`, and `Experiment` are recommended.
-
----
-
-## 🔧 Configuration Example
-
+## Configuration Example
 ```yaml
 state_dimension: 2
-num_time_steps: 300
-dt: 0.05
-
+num_time_steps: 100
+dt: 0.1
 initial:
-  true_state: [0.0, 5.0]
-  est_state:  [0.0, 0.0]
-  initial_cov: 100.0
-
+  true_state: [0.0, 1.0]
+  est_state: [0.0, 0.0]
+  initial_cov: 1.0
 dynamics:
-  state_transition: [[1.0, 0.05], [0.0, 1.0]]
-  process_noise_diag: [0.0025, 0.0001]
-
+  state_transition:
+    - [1.0, 0.1]
+    - [0.0, 1.0]
+  process_noise_diag: [0.01, 0.005]
 measurement:
-  observation_matrix: [1.0, 0.0]
-  measurement_noise: 0.25
-
-monte_carlo:
-  runs: 200
-  base_seed: 42
+  observation_matrix: [[1.0, 0.0]]
+  measurement_noise: 0.1
+estimator_type: kf
 ```
+---
+
+## Comparison
+
+python ./python/compare_estimators.py --tag "my_test"
+
+This generates plots showing trajectories, errors, and RMSE for all estimators under the same tag.
 
 ---
 
-## 🧩 Extensibility
+## Development Notes
 
-New estimators can be added by implementing:
+- All estimator selection logic is centralized in EstimatorFactory.cpp (SDD.md §13)
+- New estimators should inherit from Estimator and be added to the factory
+- Use --tag <name> when running to group related experiments
 
-```cpp
-class Estimator {
-public:
-    virtual ~Estimator() = default;
-    virtual void predict(const Eigen::VectorXd& u = {}) = 0;
-    virtual void update(const Eigen::VectorXd& z) = 0;
-    virtual Eigen::VectorXd state() const = 0;
-    virtual Eigen::MatrixXd covariance() const = 0;
-};
-```
-
-Planned extensions:
-
-* Extended Kalman Filter (EKF)
-* Unscented Kalman Filter (UKF)
-* Particle filters
-* Parallel Monte Carlo execution
+Current status: KF, UKF, EKF, and PF are fully functional with proper database logging.
 
 ---
 
-## ⚠️ Limitations (MVP)
+## License
 
-* Linear systems only
-* No real-time constraints
-* No GUI
-* Single-threaded execution
+MIT
 
 ---
 
-## 📚 Documentation
-
-See [`docs/SDD.md`](docs/SDD.md) for full system design.
-
----
-
-## 📄 License
-
-MIT (or TBD)
-
----
-
-## 👤 Author
+## Author
 
 mpeaton
-
