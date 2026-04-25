@@ -74,5 +74,37 @@ def main():
     print("\n🎉 All tests passed! Python bindings are fully functional.")
 
 
+def test_kalmanfilter_setR():
+    """
+    Test that KalmanFilter.setR and getR work as expected.
+    """
+    import numpy as np
+    import kalman
+
+    # 1D Kalman Filter
+    F = np.array([[1.0]])
+    Q = np.array([[0.01]])
+    H = np.array([[1.0]])
+    R = np.array([[0.1]])
+    B = np.array([[0.0]])
+
+    kf = kalman.KalmanFilter(F, Q, H, R, B)
+    kf.init(np.array([0.0]), np.array([[1.0]]))
+
+    # Check initial R
+    np.testing.assert_allclose(kf.getR(), R)
+
+    # Change R
+    new_R = np.array([[0.5]])
+    kf.setR(new_R)
+    np.testing.assert_allclose(kf.getR(), new_R)
+
+    # Run a predict/update step to ensure filter still works
+    kf.predict()
+    kf.update(np.array([1.0]))
+    print("✓ KalmanFilter.setR/getR test passed.")
+
+# Optionally, call the test at the end of the script:
 if __name__ == "__main__":
     main()
+    test_kalmanfilter_setR()
