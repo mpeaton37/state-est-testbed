@@ -33,6 +33,10 @@ PYBIND11_MODULE(_stateest, m) {
         .def_property_readonly("state", &KalmanFilter::state)
         .def_property_readonly("covariance", &KalmanFilter::covariance)
 
+        // Accessor for measurement noise covariance R
+        .def("getR", &KalmanFilter::getR)
+        .def("setR", &KalmanFilter::setR)
+
         // Convenience method for 1D price smoothing
         .def("update_price", [](KalmanFilter& self, double price) {
             Eigen::VectorXd z(1);

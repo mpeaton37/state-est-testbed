@@ -34,6 +34,14 @@ Eigen::VectorXd KalmanFilter::state() const { return x_; }
 
 Eigen::MatrixXd KalmanFilter::covariance() const { return P_; }
 
+Eigen::MatrixXd KalmanFilter::getR() const {
+    return R_;
+}
+
+void KalmanFilter::setR(const Eigen::MatrixXd& newR) {
+    R_ = newR;
+}
+
 std::pair<Eigen::VectorXd, Eigen::MatrixXd> KalmanFilter::get_state_and_covariance() const {
     return {x_, P_};
 }

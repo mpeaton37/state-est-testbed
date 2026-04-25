@@ -17,7 +17,11 @@ public:
 
     Eigen::VectorXd state() const override;
     Eigen::MatrixXd covariance() const override;
-   
+
+    // Accessor for measurement noise covariance R
+    Eigen::MatrixXd getR() const;
+    void setR(const Eigen::MatrixXd& newR);
+
     // Convenience for Python: return both state and covariance
     std::pair<Eigen::VectorXd, Eigen::MatrixXd> get_state_and_covariance() const;
 private:
