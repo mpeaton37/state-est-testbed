@@ -12,7 +12,7 @@ public:
 
     void init(const Eigen::VectorXd& x0, const Eigen::MatrixXd& P0);
 
-    void predict(const Eigen::VectorXd& u = {}) override;
+    void predict(const Eigen::VectorXd& u = Eigen::VectorXd()) override;
     void update(const Eigen::VectorXd& z) override;
 
     Eigen::VectorXd state() const override;
